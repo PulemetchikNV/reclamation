@@ -27,6 +27,14 @@ const router = createRouter({
             component: () => import('../views/ScenarioGroups/index.vue')
         },
         {
+            path: '/characters',
+            component: () => import('../views/Characters/index.vue')
+        },
+        {
+            path: '/character-creator',
+            component: () => import('../views/CharacterCreator/index.vue')
+        },
+        {
             path: '/scenario/:scenarioId/counterparty/:id',
             component: () => import('../views/CounterParty/index.vue')
         },
