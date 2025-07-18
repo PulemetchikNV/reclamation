@@ -10,7 +10,8 @@ import google.generativeai as genai
 import nltk
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
-from langchain.retrievers import BM25Retriever, EnsembleRetriever
+from langchain_community.retrievers import BM25Retriever
+from langchain.retrievers import EnsembleRetriever
 from langchain.docstore.document import Document
 from sentence_transformers.cross_encoder import CrossEncoder
 
@@ -18,7 +19,7 @@ from sentence_transformers.cross_encoder import CrossEncoder
 # Автоматическая загрузка необходимых данных для NLTK при первом запуске
 try:
     nltk.data.find('tokenizers/punkt')
-except nltk.downloader.DownloadError:
+except LookupError:
     print("Загрузка пакета 'punkt' для NLTK (требуется для разделения на предложения)...")
     nltk.download('punkt')
     print("Загрузка 'punkt' завершена.")
