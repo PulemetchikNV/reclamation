@@ -1,118 +1,66 @@
-import { computed, ref } from "vue";
-import { axiosInstance } from "../plugins/axios";
-import { convertRequestStateToRefs, getRequest, getRequestState } from "../utils/requests";
-import { counterparties, currentCounterparty } from "../__data__/store";
-import type { Counterparty, CreateCounterpartyData, GenerateCounterpartyParams } from "../types/counterparty";
+import { ref } from 'vue';
+import type { Counterparty } from '../types/counterparty';
+import { axiosInstance as api } from '../plugins/axios';
+import { convertRequestStateToRefs, getRequestState } from '../utils/requests';
+import { getRequest } from '../utils/requests';
+import { currentCounterparty } from '../__data__/store';
 
 export function useCounterparty() {
-    // Состояния запросов
-    const getCounterpartiesState = ref(getRequestState());
-    const getCounterpartyState = ref(getRequestState());
-    const createCounterpartyState = ref(getRequestState());
-    const updateCounterpartyState = ref(getRequestState());
-    const deleteCounterpartyState = ref(getRequestState());
-    const generateCounterpartyState = ref(getRequestState());
+  const counterparties = ref<Counterparty[]>([]);
+  const isCounterpartiesLoading = ref(false);
+  const isCounterpartiesError = ref<string | null>(null);
 
-    /**
-     * Получение всех контрагентов
-     */
-    const getCounterparties = async () => {
-        return await getRequest<Counterparty[]>(async () => {
-            const res = await axiosInstance.get('/api/counterparties');
-            counterparties.value = res.data;
-            return res.data;
-        }, getCounterpartiesState.value);
-    };
 
-    /**
-     * Получение контрагента по ID
-     */
-    const getCounterparty = async (id: string) => {
-        return await getRequest<Counterparty>(async () => {
-            const res = await axiosInstance.get(`/api/counterparties/${id}`);
-            currentCounterparty.value = res.data;
-            return res.data;
-        }, getCounterpartyState.value);
-    };
+  const getCounterpartyState = ref(getRequestState())
 
-    /**
-     * Создание нового контрагента
-     */
-    const createCounterparty = async (data: CreateCounterpartyData) => {
-        return await getRequest<Counterparty>(async () => {
-            const res = await axiosInstance.post('/api/counterparties', data);
-            return res.data;
-        }, createCounterpartyState.value);
-    };
+  const isCreating = ref(false);
+  const createError = ref<string | null>(null);
 
-    /**
-     * Обновление контрагента
-     */
-    const updateCounterparty = async (id: string, data: Partial<CreateCounterpartyData>) => {
-        return await getRequest<Counterparty>(async () => {
-            const res = await axiosInstance.patch(`/api/counterparties/${id}`, data);
-            
-            // Обновляем текущего контрагента, если он был загружен
-            if (currentCounterparty.value && currentCounterparty.value.id === id) {
-                currentCounterparty.value = res.data;
-            }
-            
-            return res.data;
-        }, updateCounterpartyState.value);
-    };
+  const getCounterparties = async () => {
+    isCounterpartiesLoading.value = true;
+    isCounterpartiesError.value = null;
+    try {
+      const response = await api.get<Counterparty[]>('/api/counterparties');
+      counterparties.value = response.data;
+    } catch (err) {
+      isCounterpartiesError.value = 'Не удалось загрузить персонажей';
+    } finally {
+      isCounterpartiesLoading.value = false;
+    }
+  };
 
-    /**
-     * Удаление контрагента
-     */
-    const deleteCounterparty = async (id: string) => {
-        return await getRequest<void>(async () => {
-            await axiosInstance.delete(`/api/counterparties/${id}`);
-            
-            // Сбрасываем текущего контрагента, если он был удален
-            if (currentCounterparty.value && currentCounterparty.value.id === id) {
-                currentCounterparty.value = null;
-            }
-            
-            // Удаляем контрагента из списка, если список загружен
-            if (counterparties.value.length > 0) {
-                counterparties.value = counterparties.value.filter(c => c.id !== id);
-            }
-        }, deleteCounterpartyState.value);
-    };
+  const getCounterparty = async (id: string) => {
+    return await getRequest<Counterparty>(async () => {
+      const response = await api.get<Counterparty>(`/api/counterparties/${id}`);
+      currentCounterparty.value = response.data
+      return response.data;
+    }, getCounterpartyState.value)
+  };
 
-    /**
-     * Генерация нового контрагента с помощью AI
-     */
-    const generateCounterparty = async (params: GenerateCounterpartyParams = {}) => {
-        return await getRequest<Counterparty>(async () => {
-            const res = await axiosInstance.post('/api/counterparties/generate', params);
-            
-            // Получаем созданного контрагента и добавляем его в список (если список загружен)
-            if (counterparties.value.length > 0) {
-                counterparties.value = [...counterparties.value, res.data];
-            }
-            
-            return res.data;
-        }, generateCounterpartyState.value);
-    };
+  const createCounterparty = async (data: any): Promise<boolean> => {
+    isCreating.value = true;
+    createError.value = null;
+    try {
+      await api.post('/api/counterparties', data);
+      await getCounterparties(); // Refresh the list
+      return true;
+    } catch (err) {
+      createError.value = 'Не удалось создать персонажа';
+      return false;
+    } finally {
+      isCreating.value = false;
+    }
+  };
 
-    return {
-        // Данные
-        counterparties,
-        
-        // Методы
-        getCounterparties,
-        getCounterparty,
-        createCounterparty,
-        updateCounterparty,
-        deleteCounterparty,
-        generateCounterparty,
-        
-        ...convertRequestStateToRefs(getCounterpartiesState.value, 'counterparties'),
-        ...convertRequestStateToRefs(getCounterpartyState.value, 'counterparty'),
-        ...convertRequestStateToRefs(createCounterpartyState.value, 'createCounterparty'),
-        ...convertRequestStateToRefs(updateCounterpartyState.value, 'updateCounterparty'),
-        ...convertRequestStateToRefs(deleteCounterpartyState.value, 'deleteCounterparty'),
-        ...convertRequestStateToRefs(generateCounterpartyState.value, 'generateCounterparty'),
-    };
+  return {
+    counterparties,
+    isCounterpartiesLoading,
+    isCounterpartiesError,
+    getCounterparties,
+    isCreating,
+    createError,
+    createCounterparty,
+    getCounterparty,
+    ...convertRequestStateToRefs(getCounterpartyState.value, 'counterparty'),
+  };
 } 

@@ -9,6 +9,6 @@ router.post('/', apartmentController.createApartment);
 router.get('/:id', apartmentController.getApartmentById);
 router.patch('/:id', apartmentController.updateApartment);
 router.delete('/:id', apartmentController.deleteApartment);
-router.post('/generate', apartmentController.generateApartment);
+router.post('/generate', apartmentController.generateScenarioContext);
 
 export default router; 

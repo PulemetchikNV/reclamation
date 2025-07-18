@@ -1,46 +1,32 @@
-import { Prisma } from '@prisma/client';
+import { Prisma, Scenario, ScenarioGroup, Counterparty, Chat, Message } from '../generated/prisma/index.js';
 
 // Типы для чата
-export type ChatWithRelations = Prisma.ChatGetPayload<{
-  include: {
-    messages: true;
-    scenario: {
-      include: {
-        group: true;
-      };
-    };
-    counterparty: true;
-  };
-}>;
+export type ChatWithRelations = Chat & {
+  messages: Message[];
+  scenario: ScenarioWithRelations | null;
+  counterparty: Counterparty;
+};
 
 // Типы для сценария
-export type ScenarioWithRelations = Prisma.ScenarioGetPayload<{
-  include: {
-    group: true;
-    chats: true;
-  };
-}>;
+export type ScenarioWithRelations = Scenario & {
+  group: ScenarioGroup;
+  chats: Chat[];
+};
 
 // Типы для группы сценариев
-export type ScenarioGroupWithRelations = Prisma.ScenarioGroupGetPayload<{
-  include: {
-    scenarios: true;
-  };
-}>;
+export type ScenarioGroupWithRelations = ScenarioGroup & {
+  scenarios: Scenario[];
+};
 
 // Типы для контрагента
-export type CounterpartyWithRelations = Prisma.CounterpartyGetPayload<{
-  include: {
-    chats: true;
-  };
-}>;
+export type CounterpartyWithRelations = Counterparty & {
+  chats: Chat[];
+};
 
 // Типы для сообщения
-export type MessageWithRelations = Prisma.MessageGetPayload<{
-  include: {
-    chat: true;
-  };
-}>;
+export type MessageWithRelations = Message & {
+  chat: Chat;
+};
 
 // Типы для создания чата
 export type CreateChatInput = {
@@ -49,19 +35,12 @@ export type CreateChatInput = {
   counterpartyId: string;
 };
 
-// Тип для метаданных уровней сложности
-export type DifficultyMeta = {
-  easy: string;
-  medium: string;
-  hard: string;
-};
-
 // Типы для создания сценария
 export type CreateScenarioInput = {
   title: string;
   imageUrl?: string;
   aiPrompt: string;
-  difficultyMeta?: DifficultyMeta;
+  scenarioMeta?: Prisma.JsonValue;
   groupId: string;
 };
 
@@ -74,10 +53,9 @@ export type CreateScenarioGroupInput = {
 // Типы для создания контрагента
 export type CreateCounterpartyInput = {
   name: string;
-  type: 'buyer' | 'seller';
   character: string;
   goal: string;
   description: string;
   photos: string[];
-  difficulty?: 'easy' | 'medium' | 'hard';
+  characterData?: Prisma.JsonValue;
 }; 

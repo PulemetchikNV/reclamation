@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
@@ -18,7 +18,7 @@ export const scenarioService = {
     title: string;
     imageUrl?: string;
     aiPrompt: string;
-    difficultyMeta?: any;
+    scenarioMeta?: any;
     groupId: string;
   }) {
     return prisma.scenario.create({
@@ -46,7 +46,7 @@ export const scenarioService = {
     title?: string;
     imageUrl?: string;
     aiPrompt?: string;
-    difficultyMeta?: any;
+    scenarioMeta?: any;
     groupId?: string;
   }) {
     return prisma.scenario.update({

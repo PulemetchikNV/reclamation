@@ -112,10 +112,8 @@ export const chatController = {
         INITIAL_DIALOG_PROMPT({
           character: counterparty!.character,
           name: counterparty!.name,
-          scenario: `${scenario?.aiPrompt} ${scenario?.difficultyMeta?.[counterparty.difficulty] ?? ''}`,
-          difficulty: counterparty.difficulty,
+          scenario: `${scenario?.aiPrompt} ${JSON.stringify(scenario?.scenarioMeta) ?? ''}`,
           goal: counterparty.goal,
-          characterType: counterparty.type,
           apartmentSources: apartment?.sources || '',
           apartmentDescription: apartment?.description || '',
           userName: (fullUser?.firstName ? (fullUser?.firstName + ' ' + fullUser?.lastName) : '') || ''
@@ -331,7 +329,6 @@ export const chatController = {
           role: 'user', content: HINT_PROMPT({
             messages: getFormattedMessages(chat.messages),
             scenarioInfo: `Название: ${chat.scenario.title} \nОписание: ${chat.scenario.description}`,
-            clientType: chat.counterparty.type,
             clientInfo: `характер: ${chat.counterparty.character} \nимя: ${chat.counterparty.name}`,
             apartmentInfo: chat.apartment?.description || ''
           })

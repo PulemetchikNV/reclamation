@@ -19,15 +19,19 @@ export const counterpartyController = {
   // Создание нового контрагента
   async createCounterparty(req: Request, res: Response) {
     try {
-      const { name, type, character, goal, description, photos, difficulty } = req.body;
+      const { name, photos, characterData } = req.body;
+      
+      const description = characterData?.general?.role || 'Нет описания';
+      const character = characterData?.behavior?.personalityType || 'Не указан';
+      const goal = characterData?.behavior?.attitude || 'Не указана';
+
       const counterparty = await counterpartyService.createCounterparty({
         name,
-        type,
         character,
         goal,
         description,
         photos,
-        difficulty
+        characterData,
       });
       res.status(201).json(counterparty);
     } catch (error) {
@@ -87,15 +91,19 @@ export const counterpartyController = {
   // Обновление контрагента
   async updateCounterparty(req: Request, res: Response) {
     try {
-      const { name, type, character, goal, description, photos, difficulty } = req.body;
+      const { name, photos, characterData } = req.body;
+
+      const description = characterData?.general?.role || 'Нет описания';
+      const character = characterData?.behavior?.personalityType || 'Не указан';
+      const goal = characterData?.behavior?.attitude || 'Не указана';
+
       const counterparty = await counterpartyService.updateCounterparty(req.params.id, {
         name,
-        type,
         character,
         goal,
         description,
         photos,
-        difficulty
+        characterData,
       });
       res.json(counterparty);
     } catch (error) {

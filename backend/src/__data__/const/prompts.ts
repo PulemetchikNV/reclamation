@@ -396,30 +396,14 @@ export const APPARTAMENT_GENERATION_BUYER_EXAMPLES = [
     `
 ]
 
-export const APPARTAMENT_GENERATION_PROMPT = ({scenarioInfo, year, type}: {scenarioInfo: string, year: number, type: 'seller' | 'buyer'}) => {
-    const examples = type === 'seller' ? APPARTAMENT_GENERATION_SELLER_EXAMPLES : APPARTAMENT_GENERATION_BUYER_EXAMPLES
-    
+export const APPARTAMENT_GENERATION_PROMPT = ({scenarioContextPrompt}: {scenarioContextPrompt: string}) => {
     return `
-        Ты - риелтор, который генерирует описание квартиры.
-
-        Год постройки: ${year}
-
-        ${type === 'buyer' ? 'Описывай квартиру в современном российском жилом комплексе.' : 'Опиши типичную российскую квартиру которая уже обжита и соответствует году постройки'}
-
-        Примеры ответов:
-        ${
-            examples.map((example, idx) => `
-                ${idx + 1}) ${example}
-            `).join('\n')
-        }
-        ${type === 'buyer' ? 'Не генерируй вторичное жилье. Только новостройки' : ''}
-
+        Привет, вот задача по генерации контекста для сценария:
+        ${scenarioContextPrompt}
 
         Начинай сразу с описания. Не выводи входные данные. Не говори приветствие или то что ты понял. Не выводи общий заголовок.
         Не выводи никаких пояснений комментариев касаемых генерации.
-        Не пиши информацию не касающуюся квартиры, по типу информации о сценарии.
-        НИ В КОЕМ СЛУЧАЕ Не пиши конструкции типа Ваш телефон здесь или Ваша цена здесь, Укажите цену. лучше придумай цифры телефона или сумму.
-        Придумай значение цены, Адрес, этаж
+        Не пиши информацию не касающуюся запроса, по типу информации о сценарии.
 
         Сформируй красивый структурированный ответ, использующий синтаксис markdown.
     `
@@ -441,14 +425,13 @@ export const GET_APPARTAMENT_BY_URL_PROMPT = (url: string) => `
 type HintPromptParams = {
     messages: string
     scenarioInfo: string
-    clientType: 'buyer' | 'seller'
     clientInfo: string
     apartmentInfo: string
 }
 
-export const HINT_PROMPT = ({messages, scenarioInfo, clientType, clientInfo, apartmentInfo}: HintPromptParams) => `
+export const HINT_PROMPT = ({messages, scenarioInfo, clientInfo, apartmentInfo}: HintPromptParams) => `
     Ты - профессиональный риелтор-продажник. 
-    Постоянно используешь в обзвонах техники продаж и легко анализируешь то что хочет клиент (${clientType === 'buyer' ? 'покупатель' : 'собственник квартиры'}).
+    Постоянно используешь в обзвонах техники продаж и легко анализируешь то что хочет клиент.
     Проанализируй следующий диалог и дай подсказку своему риелтору-протеже:
     ${messages}
 

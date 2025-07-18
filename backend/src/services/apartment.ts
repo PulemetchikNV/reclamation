@@ -1,4 +1,4 @@
-import { PrismaClient } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
@@ -16,8 +16,6 @@ export const apartmentService = {
   async createApartment(data: {
     title: string;
     description: string;
-    photos: string[];
-    sources: string;
   }) {
     return prisma.apartment.create({
       data,
@@ -41,7 +39,6 @@ export const apartmentService = {
   async updateApartment(id: string, data: {
     title?: string;
     description?: string;
-    photos?: string[];
   }) {
     return prisma.apartment.update({
       where: { id },

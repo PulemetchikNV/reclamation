@@ -1,9 +1,7 @@
 import { Request, Response } from 'express';
 import { apartmentService } from '../services/apartment';
 import { aiService } from '../services/ai';
-import { APPARTAMENT_GENERATION_PROMPT, APPARTAMENT_PHOTO_GENERATION_PROMPT, GET_APPARTAMENT_BY_URL_PROMPT } from 'src/__data__/const/prompts';
-import { removeJsonBraces } from 'src/utils';
-import { getRandomApartament } from 'src/__data__/const/apartaments';
+import { APPARTAMENT_GENERATION_PROMPT } from 'src/__data__/const/prompts';
 
 export const apartmentController = {
   // Получение всех апартаментов
@@ -20,11 +18,10 @@ export const apartmentController = {
   // Создание новых апартаментов
   async createApartment(req: Request, res: Response) {
     try {
-      const { title, description, photos } = req.body;
+      const { title, description } = req.body;
       const apartment = await apartmentService.createApartment({
         title,
         description,
-        photos
       });
       res.status(201).json(apartment);
     } catch (error) {
@@ -34,35 +31,20 @@ export const apartmentController = {
   },
 
   // Генерация апартаментов с использованием AI
-  async generateApartment(req: Request, res: Response) {
+  async generateScenarioContext(req: Request, res: Response) {
     try {
-      const { scenarioInfo, clientType, url } = req.body;
-      const { sources, year } = getRandomApartament(clientType)
+      const { scenarioInfo } = req.body;
+
       let apartmentResponse = null;
       
-      apartmentResponse = url ? await aiService.communicateWithGemini([
-        { role: 'user', content: GET_APPARTAMENT_BY_URL_PROMPT(url) }
-      ]) : await aiService.communicateWithGemini([
-        { role: 'user', content: APPARTAMENT_GENERATION_PROMPT({scenarioInfo: scenarioInfo || '', year, type: clientType}) }
+      apartmentResponse = await aiService.communicateWithGemini([
+        { role: 'user', content: APPARTAMENT_GENERATION_PROMPT({scenarioContextPrompt: scenarioInfo?.scenarioMeta?.prompt || ''}) }
       ])
-      // Генерация описания апартаментов
-
       const description = apartmentResponse.candidates[0].content.parts[0].text;
-      
-      // Генерация фотографии апартаментов
-      const photoResponse = await aiService.getGeminiPhoto(
-        APPARTAMENT_PHOTO_GENERATION_PROMPT(description)
-      );
 
-      // Получение URL изображения
-      const photoUrl = photoResponse.imageUrl;
-      
-      // Создание апартаментов в базе данных
       const apartment = await apartmentService.createApartment({
-        title: `Апартаменты ${new Date().toLocaleString('ru')}`,
+        title: `${scenarioInfo?.scenarioMeta?.name || 'Контекст'} ${new Date().toLocaleString('ru')}`,
         description,
-        photos: [photoUrl],
-        sources,
       });
       
       res.status(201).json(apartment);
@@ -89,11 +71,10 @@ export const apartmentController = {
   // Обновление апартаментов
   async updateApartment(req: Request, res: Response) {
     try {
-      const { title, description, photos } = req.body;
+      const { title, description } = req.body;
       const apartment = await apartmentService.updateApartment(req.params.id, {
         title,
         description,
-        photos
       });
       res.json(apartment);
     } catch (error) {

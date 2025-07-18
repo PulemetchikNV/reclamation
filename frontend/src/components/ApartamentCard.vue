@@ -6,28 +6,10 @@
             
             class="apartment-card__image-container"
         >
-            <Image 
-                v-if="apartment.photos && apartment.photos.length > 0" 
-                :src="apiUrl + apartment.photos[0]" 
-                :preview="true"
-                class="apartment-card__image" 
-                alt="Фото апартаментов"
-                :width="600"
-                :height="400"
-                :pt="{}"
-            />
-          <div v-else class="apartment-card__no-image">
-              <i class="fas fa-home"></i>
-          </div>
+          
         </div>
         <div class="apartment-card__content text-start">
             <VueMarkdown :source="apartment.description" />
-        </div>
-        <div class="apartment-card__content">
-            <p class="apartment-card__description text-start">Размещено на:</p>
-            <div class="chips">
-                <Chip v-for="source in sources" :label="source" />
-            </div>
         </div>
         <slot name="append" />
     </template>
@@ -63,7 +45,7 @@ const shortDescription = computed(() => {
 });
 
 const sources = computed(() => {
-  return props.apartment.sources.split(',');
+  return []
 });
 
 const apiUrl = inject(API_URL_KEY)?.replace(/\/$/, '');

@@ -1,19 +1,20 @@
 
 
 <script setup lang="ts">
-import { inject, onMounted } from 'vue';
+import { inject, onMounted, ref } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useScenarios } from '../../composables/useScenarios';
 import { useCounterparty } from '../../composables/useCounterparty';
+import CounterPartyCard from '../../components/CounterPartyCard.vue';
+import { useApartament } from '../../composables/useApartament';
+import { getScenarioInfo } from '../../utils/scenario';
+import Dialog from 'primevue/dialog';
 
 // Компоненты PrimeVue
 import DataView from 'primevue/dataview';
 import Button from 'primevue/button';
 import ProgressSpinner from 'primevue/progressspinner';
 import Message from 'primevue/message';
-import Dialog from 'primevue/dialog';
-import { useApartament } from '../../composables/useApartament';
-import { getScenarioInfo, getClientType } from '../../utils/scenario';
 import {API_URL_KEY} from '../../__data__/injectKeys'
 import { getStaticUrl } from '../../utils';
 import { addMessage } from '../../__data__/store';
@@ -27,43 +28,57 @@ const {
   isGroupScenariosLoading, 
   isGroupScenariosError
 } = useScenarios();
-const {generateCounterparty, isGenerateCounterpartyLoading} = useCounterparty();
+const { 
+  getCounterparties,
+  counterparties,
+  isCounterpartiesLoading 
+} = useCounterparty();
+
 const {generateApartament, isGenerateApartamentLoading} = useApartament();
 
-const fallbackImage = 'https://placehold.co/300x150'
-// Получение ID группы из параметров маршрута
-const groupId = route.params.id;
 let apiUrl = inject(API_URL_KEY);
 let staticUrl = getStaticUrl(apiUrl!);
+
+const isDialogVisible = ref(false);
+const selectedScenarioId = ref<string | null>(null);
+
+const openCharacterSelection = async (scenarioId: string) => {
+  selectedScenarioId.value = scenarioId;
+  await getCounterparties();
+  isDialogVisible.value = true;
+};
+
+const handleCharacterSelect = async (counterpartyId: string) => {
+  if (!selectedScenarioId.value) return;
+
+  const groupScenario = currentGroup.value?.scenarios?.find(s => s.id === selectedScenarioId.value);
+
+  try {
+    const apartament = await generateApartament(groupScenario!);
+    if (apartament) {
+      router.push(`/scenario/${selectedScenarioId.value}/counterparty/${counterpartyId}?apartamentId=${apartament.id}`);
+    } else {
+      throw new Error('Ошибка при генерации объекта недвижимости');
+    }
+  } catch (error: any) {
+    addMessage({
+      summary: 'Что-то пошло не так',
+      detail: error.message,
+      severity: 'error'
+    })
+  } finally {
+    isDialogVisible.value = false;
+  }
+};
 
 // Возврат на страницу со списком групп
 const goBack = () => {
   router.push('/scenario-groups');
 };
 
-const handleScenarioClick = async (scenarioId: string) => {
-    const type = getClientType(currentGroup.value!);
-    const groupScenario = currentGroup.value?.scenarios?.find(s => s.id === scenarioId);
-    const scenarioInfo = getScenarioInfo(groupScenario!, currentGroup.value!);
-
-    try {
-      const [counterparty, apartament] = await Promise.all([
-        generateCounterparty({type}), 
-        generateApartament(scenarioInfo, type)
-      ]);
-
-      if(counterparty) await router.push(`/scenario/${scenarioId}/counterparty/${counterparty?.id}?apartamentId=${apartament?.id}`);
-      else throw new Error('Ошибка при генерации контрагента');
-    } catch (error: any) {
-      addMessage({
-        summary: 'Что-то пошло не так',
-        detail: error.message,
-        severity: 'error'
-      })
-    }
-}
 // Загрузка сценариев для выбранной группы
 onMounted(async () => {
+  const groupId = route.params.id;
   if (groupId) {
     await getGroupScenarios(groupId as string);
   }
@@ -107,7 +122,7 @@ onMounted(async () => {
             v-for="scenario in slotProps.items" 
             :key="scenario.id" 
             class="scenario-card"
-            @click="handleScenarioClick(scenario.id)"
+            @click="openCharacterSelection(scenario.id)"
           >
             <div class="scenario-image-container">
               <img 
@@ -135,9 +150,28 @@ onMounted(async () => {
         </div>
       </template>
     </DataView>
-    <Dialog :visible="isGenerateCounterpartyLoading || isGenerateApartamentLoading" :modal="true" :draggable="false" :resizable="false">
-      <p v-if="isGenerateCounterpartyLoading">Генерация контрагента...</p>
-      <p v-else-if="isGenerateApartamentLoading">Генерация объекта недвижимости...</p>
+    <Dialog 
+      :visible="isDialogVisible" 
+      @update:visible="isDialogVisible = false"
+      modal 
+      header="Выберите персонажа"
+      :style="{ width: '50vw' }"
+    >
+      <div v-if="isCounterpartiesLoading" class="loader">
+        <ProgressSpinner />
+      </div>
+      <div v-else class="characters-grid">
+        <CounterPartyCard
+          v-for="character in counterparties"
+          :key="character.id"
+          :counterparty="character"
+          :can-change-difficulty="false"
+          @click="handleCharacterSelect(character.id)"
+        />
+      </div>
+    </Dialog>
+    <Dialog :visible="isGenerateApartamentLoading" :modal="true" :draggable="false" :resizable="false">
+      <p>Генерация контекста для сценария...</p>
     </Dialog>
   </div>
 </template>
@@ -256,6 +290,12 @@ onMounted(async () => {
 
 .empty-message {
   color: #6b7280;
+}
+
+.characters-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 1rem;
 }
 
 @media (max-width: 480px) {

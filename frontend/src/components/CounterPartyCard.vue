@@ -4,8 +4,7 @@ import Card from 'primevue/card';
 import Avatar from 'primevue/avatar';
 import { inject, watch } from 'vue';
 import type { Counterparty } from '../types/counterparty';
-import Tag from 'primevue/tag';
-import { getStaticUrl } from '../utils';
+
 defineOptions({
     name: 'CounterPartyCard'
 });
@@ -20,35 +19,17 @@ defineEmits<{
 }>();
 
 
-// Функция для определения цвета метки типа контрагента
-const getTypeTagColor = (type: string) => {
-    return type === 'buyer' ? 'info' : 'success';
-};
-
-// Функция для определения цвета метки сложности
-const getDifficultyTagColor = (difficulty: string) => {
-    switch (difficulty) {
-        case 'easy': return 'success';
-        case 'medium': return 'warning';
-        case 'hard': return 'danger';
-        default: return 'info';
-    }
-};
-
-const getDifficultyTagValue = (difficulty: string) => {
-        return (difficulty === 'easy' ? 'Легкий' : difficulty === 'medium' ? 'Средний' : 'Сложный') + ' уровень';
-};
-
 const apiUrl = inject(API_URL_KEY)?.replace(/\/$/, '');
 </script>
 <template>
     <Card class="counterparty-card" :pt="{body: {style: {paddingTop: '0'}}}">
-        <template #header v-if="counterparty.photos && counterparty.photos.length">
+        <template #header>
             <div class="counterparty-header">
                 <div class="header">
                     <div class="image-container">
-                    <Avatar 
-                        :image="`${apiUrl}${counterparty.photos[0]}`" 
+                    <Avatar
+                        :image="counterparty.photos?.length > 0 ? `${apiUrl}${counterparty.photos[0]}` : ''" 
+                        :label="counterparty.photos?.length === 0 ? counterparty.name[0] : ''"
                         alt="Фото контрагента" 
                         imageClass="main-photo"
                         size="xlarge"
@@ -60,18 +41,6 @@ const apiUrl = inject(API_URL_KEY)?.replace(/\/$/, '');
                     </div>
                     <div class="spacer" />
                     <slot name="icons" />
-                </div>
-                <div class="tags-container">
-                    <Tag 
-                        :value="counterparty.type === 'buyer' ? 'Покупатель' : 'Продавец'" 
-                        :severity="getTypeTagColor(counterparty.type)"
-                    />
-                    <Tag 
-                        :value="getDifficultyTagValue(counterparty.difficulty)" 
-                        :severity="getDifficultyTagColor(counterparty.difficulty)"
-                        :class="canChangeDifficulty ? 'difficulty-tag' : ''"
-                        @click="canChangeDifficulty ? $emit('toggleDifficulty', counterparty.difficulty) : null"
-                    />
                 </div>
             </div>
         </template>

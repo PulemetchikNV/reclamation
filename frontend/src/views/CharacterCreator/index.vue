@@ -10,190 +10,190 @@
     <TabView>
       <TabPanel header="1. Общая информация" :value="0">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="name" v-model="form.general.name" fluid />
             <label for="name">Имя персонажа</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="role" v-model="form.general.role" fluid />
             <label for="role">Роль и назначение</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="format" v-model="form.general.format" fluid />
             <label for="format">Формат</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="audience" v-model="form.general.audience" fluid />
             <label for="audience">Целевая аудитория</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="language" v-model="form.general.language" fluid />
             <label for="language">Язык</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="2. Поведение и характер" :value="1">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="personalityType" v-model="form.behavior.personalityType" fluid />
             <label for="personalityType">Тип личности</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="keyTraits" v-model="form.behavior.keyTraits" rows="3" fluid />
             <label for="keyTraits">Ключевые черты характера</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="tone" v-model="form.behavior.tone" fluid />
             <label for="tone">Тон общения</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="proactivity" v-model="form.behavior.proactivity" fluid/>
             <label for="proactivity">Уровень инициативности</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="attitude" v-model="form.behavior.attitude" fluid/>
             <label for="attitude">Отношение к пользователю</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="3. Язык и стиль" :value="2">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="register" v-model="form.style.register" fluid />
             <label for="register">Регистрация</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="complexity" v-model="form.style.complexity" fluid/>
             <label for="complexity">Сложность языка</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="emojiUsage" v-model="form.style.emojiUsage" fluid/>
             <label for="emojiUsage">Использование эмодзи</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="emojiExamples" v-model="form.style.emojiExamples" rows="2" fluid/>
             <label for="emojiExamples">Примеры эмодзи</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="memeUsage" v-model="form.style.memeUsage" fluid />
             <label for="memeUsage">Использование мемов</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="memeExamples" v-model="form.style.memeExamples" rows="2" fluid />
             <label for="memeExamples">Примеры мемов/референсов</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="stickerUsage" v-model="form.style.stickerUsage" fluid />
             <label for="stickerUsage">Стикеры</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="phraseExamples" v-model="form.style.phraseExamples" rows="3" fluid />
             <label for="phraseExamples">Примеры типичных фраз</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="4. Сценарные функции" :value="3">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <Textarea id="mainTasks" v-model="form.scenarios.mainTasks" rows="3" fluid />
             <label for="mainTasks">Основные задачи</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="contextMemory" v-model="form.scenarios.contextMemory" fluid />
             <label for="contextMemory">Контекстная память</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="scenarioExamples" v-model="form.scenarios.scenarioExamples" rows="3" fluid />
             <label for="scenarioExamples">Сценарии</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="5. Визуальный образ" :value="4">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="visualType" v-model="form.visual.visualType" fluid />
             <label for="visualType">Тип визуала</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="ageGender" v-model="form.visual.ageGender" fluid />
             <label for="ageGender">Возраст и гендер</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="clothingStyle" v-model="form.visual.clothingStyle" fluid />
             <label for="clothingStyle">Одежда / стиль</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="colorPalette" v-model="form.visual.colorPalette" fluid />
             <label for="colorPalette">Цветовая гамма</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="gestures" v-model="form.visual.gestures" fluid />
             <label for="gestures">Фирменные эмоции / жесты</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="avatar" v-model="form.visual.avatar" fluid />
             <label for="avatar">Аватар / стикерпак</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="6. Технические параметры" :value="5">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="integrations" v-model="form.technical.integrations" fluid />
             <label for="integrations">Интеграции</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="aiComponent" v-model="form.technical.aiComponent" fluid />
             <label for="aiComponent">Наличие AI-составляющей</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="buttonsMenu" v-model="form.technical.buttonsMenu" fluid/>
             <label for="buttonsMenu">Кнопки / меню</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="timeouts" v-model="form.technical.timeouts" fluid/>
             <label for="timeouts">Тайм-ауты и логика задержек</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="platforms" v-model="form.technical.platforms" fluid />
             <label for="platforms">Платформы</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="7. Ограничения и запреты" :value="6">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="contentFilter" v-model="form.restrictions.contentFilter" fluid />
             <label for="contentFilter">Контент-фильтр</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="forbiddenTopics" v-model="form.restrictions.forbiddenTopics" rows="2" fluid />
             <label for="forbiddenTopics">Темы под запретом</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="stopWords" v-model="form.restrictions.stopWords" rows="2" fluid/>
             <label for="stopWords">Стоп-слова или триггеры</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="behaviorRestrictions" v-model="form.restrictions.behaviorRestrictions" fluid rows="3" />
             <label for="behaviorRestrictions">Ограничения поведения</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
       <TabPanel header="8. Дополнительно" :value="7">
         <div class="form-section">
-          <FloatLabel>
+          <IftaLabel>
             <InputText id="scalability" v-model="form.additional.scalability" fluid/>
             <label for="scalability">Возможность масштабирования</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <InputText id="brandTone" v-model="form.additional.brandTone" fluid/>
             <label for="brandTone">Пожелания по тону бренда</label>
-          </FloatLabel>
-          <FloatLabel>
+          </IftaLabel>
+          <IftaLabel>
             <Textarea id="references" v-model="form.additional.references" rows="3" fluid />
             <label for="references">Аналоги и референсы</label>
-          </FloatLabel>
+          </IftaLabel>
         </div>
       </TabPanel>
     </TabView>
@@ -202,12 +202,17 @@
 
 <script setup lang="ts">
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+import { useCounterparty } from '../../composables/useCounterparty';
 import TabView from 'primevue/tabview';
 import TabPanel from 'primevue/tabpanel';
 import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
-import FloatLabel from 'primevue/floatlabel';
+import IftaLabel from 'primevue/iftalabel';
+
+const router = useRouter();
+const { createCounterparty, isCreating } = useCounterparty();
 
 const form = ref({
   general: { name: '', role: '', format: '', audience: '', language: '' },
@@ -322,9 +327,29 @@ const parseAndFillForm = (text: string) => {
   });
 };
 
-const saveCharacter = () => {
-  // Логика сохранения (пока не реализована)
-  console.log(JSON.stringify(form.value, null, 2));
+const saveCharacter = async () => {
+  const payload = {
+    name: form.value.general.name,
+    character: form.value.behavior.personalityType,
+    goal: form.value.behavior.attitude,
+    description: form.value.general.role,
+    characterData: {
+      general: form.value.general,
+      behavior: form.value.behavior,
+      style: form.value.style,
+      scenarios: form.value.scenarios,
+      visual: form.value.visual,
+      technical: form.value.technical,
+      restrictions: form.value.restrictions,
+      additional: form.value.additional,
+    },
+    photos: [] // Placeholder
+  };
+  
+  const success = await createCounterparty(payload);
+  if (success) {
+    router.push('/characters');
+  }
 };
 
 </script>
@@ -347,10 +372,20 @@ const saveCharacter = () => {
   display: flex;
   gap: 0.5rem;
 }
+.form-meta {
+  display: flex;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+.meta-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
 .form-section {
   display: flex;
   flex-direction: column;
-  gap: 2.5rem;
+  gap: 1.5rem;
   padding-top: 1rem;
 }
 </style> 

@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed, onBeforeMount, onMounted, ref, watch, watchEffect } from 'vue';
+import { computed, onBeforeMount, ref, watch, watchEffect } from 'vue';
 import { useRoute, useRouter } from 'vue-router';
 import { useCounterparty } from '../../composables/useCounterparty';
 import Button from 'primevue/button';
@@ -14,7 +14,7 @@ import { currentApartment, chat } from '../../__data__/store';
 import ApartamentCard from '../../components/ApartamentCard.vue';
 import CounterPartyCard from '../../components/CounterPartyCard.vue';
 import { currentScenario, currentGroup, currentCounterparty } from '../../__data__/store';
-import { getScenarioInfo, getClientType } from '../../utils/scenario';
+import { getScenarioInfo } from '../../utils/scenario';
 import { useScenarios } from '../../composables/useScenarios';
 import ScenarioCard from '../../components/ScenarioCard.vue';
 import Chat from '../../components/Chat/index.vue';
@@ -32,11 +32,8 @@ const {
     getCounterparty, 
     isCounterpartyLoading,
     isCounterpartyError,
-    deleteCounterparty,
-    updateCounterparty,
-    generateCounterparty,
-    isGenerateCounterpartyLoading,
 } = useCounterparty();
+
 const { getScenario } = useScenarios();
 const { getApartament, generateApartament, isGenerateApartamentLoading } = useApartament();
 const { getChat, 
@@ -77,16 +74,6 @@ const loadApartament = async () => {
     }
 }
 
-const toggleDifficulty = async () => {
-    if(step.value === 'chat') {
-        return;
-    }
-    const currentDifficulty = currentCounterparty.value?.difficulty;
-    const newDifficulty = currentDifficulty === 'easy' ? 'medium' : currentDifficulty === 'medium' ? 'hard' : 'easy';
-    
-    await updateCounterparty(counterpartyId.value, { difficulty: newDifficulty });
-};
-
 async function handleStartChat() {
     try {
         const chat = await createChat({
@@ -122,29 +109,14 @@ const handleRefreshApartament = async (url?: string) => {
     if(url === '') {
         return;
     }
-    const clientType = currentCounterparty.value?.type;
     const res = await generateApartament(
-        getScenarioInfo(currentScenario.value!, currentGroup.value!),
-        clientType,
-        url
+        currentScenario.value!
     );
     if(res) {
         currentApartment.value = res;
         router.replace({ query: { apartamentId: res.id } });
         addMessage({
             summary: 'Объект успешно обновлен',
-            severity: 'success'
-        })
-    }
-}
-
-async function handleRefreshCounterparty() {
-    const res = await generateCounterparty({type: currentCounterparty.value?.type});
-    if(res) {
-        currentCounterparty.value = res;
-        router.replace({ params: {id: res.id}, query: {apartamentId: currentApartment.value?.id} });
-        addMessage({
-            summary: 'Контрагент успешно обновлен',
             severity: 'success'
         })
     }
@@ -228,7 +200,7 @@ watch(() => route.query.chatId, () => {
         <div class="counterparty-header header">
             <Button icon="pi pi-arrow-left" text @click="goBack" class="back-button" />
             <template v-if="step === 'counterparty'">
-                <h1>Информация о контрагенте</h1>
+                <h1>Информация о предстоящем диалоге</h1>
             </template>
             <template v-else-if="step === 'chat'">
                 <template v-if="!isEditTitle">
@@ -249,7 +221,7 @@ watch(() => route.query.chatId, () => {
                 label="Начать чат" 
                 icon="pi pi-comments"
                 :loading="isCreateChatLoading"
-                :disabled="isGenerateApartamentLoading || isGenerateCounterpartyLoading"
+                :disabled="isGenerateApartamentLoading"
                 @click="handleStartChat"
             />
         </div>
@@ -261,6 +233,8 @@ watch(() => route.query.chatId, () => {
         <Message v-if="isCounterpartyError" severity="error" :closable="false">
             {{ isCounterpartyError }}
         </Message>
+
+        <p v-if="!currentCounterparty">Не пришла информация о контрагенте</p>
 
         <!-- Контент при наличии данных -->
         <div v-if="currentCounterparty && !isCounterpartyLoading" class="counterparty-info content">
@@ -343,9 +317,8 @@ watch(() => route.query.chatId, () => {
                 </Chat>
                 <CounterPartyCard
                     :counterparty="currentCounterparty"
-                    :can-change-difficulty="step === 'counterparty'"
+                    :can-change-difficulty="false"
                     class="counterparty-info-content"
-                    @toggleDifficulty="toggleDifficulty"
                 >
                     <template #icons>
                         <Button 
@@ -354,8 +327,6 @@ watch(() => route.query.chatId, () => {
                             icon="pi pi-refresh" 
                             rounded 
                             text 
-                            :loading="isGenerateCounterpartyLoading" 
-                            @click="handleRefreshCounterparty" 
                         />
                     </template>
                 </CounterPartyCard>

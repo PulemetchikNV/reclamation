@@ -1,5 +1,5 @@
 import { CHAT_END_INDICATOR } from 'src/__data__/const/chat';
-import { Message, PrismaClient } from '../generated/prisma';
+import { Message, PrismaClient } from '../generated/prisma/index.js';
 import { chatAnalysisService } from './chat-analysis';
 
 const prisma = new PrismaClient();

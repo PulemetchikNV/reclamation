@@ -1,4 +1,5 @@
-import { PrismaClient, CounterpartyType, Difficulty } from '../generated/prisma';
+import { PrismaClient } from '../generated/prisma/index.js';
+import type { Prisma } from '../generated/prisma/index.js';
 
 const prisma = new PrismaClient();
 
@@ -15,12 +16,11 @@ export const counterpartyService = {
   // Создание нового контрагента
   async createCounterparty(data: {
     name: string;
-    type: CounterpartyType;
-    character: string;
-    goal: string;
-    description: string;
+    character?: string;
+    goal?: string;
+    description?: string;
     photos: string[];
-    difficulty?: Difficulty;
+    characterData?: Prisma.JsonValue;
   }) {
     return prisma.counterparty.create({
       data,
@@ -43,12 +43,11 @@ export const counterpartyService = {
   // Обновление контрагента
   async updateCounterparty(id: string, data: {
     name?: string;
-    type?: CounterpartyType;
     character?: string;
     goal?: string;
     description?: string;
     photos?: string[];
-    difficulty?: Difficulty;
+    characterData?: Prisma.JsonValue;
   }) {
     return prisma.counterparty.update({
       where: { id },

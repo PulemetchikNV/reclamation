@@ -61,7 +61,7 @@ model Scenario {
   description   String?
   imageUrl      String?    @map("image_url")
   aiPrompt      String     @map("ai_prompt")
-  difficultyMeta Json?     @map("difficulty_meta") // JSON с описаниями для разных уровней сложности (easy, medium, hard)
+  scenarioMeta  Json?      @map("scenario_meta") // JSON с контекстом для сценария
   createdAt     DateTime   @default(now()) @map("created_at")
   updatedAt     DateTime   @updatedAt @map("updated_at")
   groupId       String     @map("group_id")
@@ -72,29 +72,15 @@ model Scenario {
   @@map("scenarios")
 }
 
-// Перечисление уровней сложности
-enum Difficulty {
-  easy    @map("0")
-  medium  @map("1")
-  hard    @map("2")
-}
-
-// Перечисление типов контрагентов
-enum CounterpartyType {
-  buyer
-  seller
-}
-
 // Модель контрагента
 model Counterparty {
   id          String          @id @default(uuid())
   name        String
-  type        CounterpartyType
-  character   String          // Характер контрагента
-  goal        String          // Цель контрагента
-  description String          // Описание контрагента
+  character   String?         // Характер контрагента
+  goal        String?         // Цель контрагента
+  description String?         // Описание контрагента
   photos      String[]        // Массив URL фотографий
-  difficulty  Difficulty      @default(medium)
+  characterData Json?         @map("character_data")
   createdAt   DateTime        @default(now()) @map("created_at")
   updatedAt   DateTime        @updatedAt @map("updated_at")
   chats       Chat[]
@@ -107,8 +93,6 @@ model Apartment {
   id          String    @id @default(uuid())
   title       String
   description String
-  photos      String[]   // Массив URL фотографий
-  sources     String    @default("avito") // Источники квартиры (соцсети)
   createdAt   DateTime  @default(now()) @map("created_at")
   updatedAt   DateTime  @updatedAt @map("updated_at")
   chats       Chat[]
