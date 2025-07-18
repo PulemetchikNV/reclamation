@@ -12,3 +12,6 @@ __pycache__/
 
 # Vector store directory
 vector_stores/
+
+# Environment variables
+.env

@@ -5,6 +5,9 @@ from flask import Flask, request, jsonify
 from pydantic import ValidationError
 from validate import CharacterModel
 import google.generativeai as genai
+from dotenv import load_dotenv
+
+load_dotenv()
 
 # Импорты для RAG
 import nltk
@@ -24,10 +27,14 @@ except LookupError:
     nltk.download('punkt')
     print("Загрузка 'punkt' завершена.")
 
-API_KEY = "AIzaSyAy817y7DirgpWnMPS6t5ps-6Ui2pFAMys"
-genai.configure(api_key=API_KEY)
-model = genai.GenerativeModel('models/gemini-2.0-flash-lite')
-embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001")
+# --- Конфигурация и загрузка моделей ---
+api_key = os.getenv("GOOGLE_API_KEY")
+if not api_key:
+    raise ValueError("Необходимо установить переменную окружения GOOGLE_API_KEY.")
+
+genai.configure(api_key=api_key)
+embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
+model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
 rerank_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
 app = Flask(__name__)
