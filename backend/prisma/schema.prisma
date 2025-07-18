@@ -56,34 +56,36 @@ model ScenarioGroup {
 
 // Модель для сценариев
 model Scenario {
-  id            String     @id @default(uuid())
-  title         String
-  description   String?
-  imageUrl      String?    @map("image_url")
-  aiPrompt      String     @map("ai_prompt")
-  scenarioMeta  Json?      @map("scenario_meta") // JSON с контекстом для сценария
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
-  groupId       String     @map("group_id")
-  group         ScenarioGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  chats         Chat[]
-  metadata      Json?        @map("metadata")
+  id              String         @id @default(uuid())
+  title           String
+  description     String
+  aiPrompt        String         @map("ai_prompt") @db.Text
+  scenarioMeta    Json?          @map("scenario_meta")
+  imageUrl        String?        @map("image_url")
+  createdAt       DateTime       @default(now()) @map("created_at")
+  updatedAt       DateTime       @updatedAt @map("updated_at")
+  chats           Chat[]
+  scenarioGroupId String?        @map("scenario_group_id")
+  scenarioGroup   ScenarioGroup? @relation(fields: [scenarioGroupId], references: [id])
+  counterparties  Counterparty[]
 
   @@map("scenarios")
 }
 
 // Модель контрагента
 model Counterparty {
-  id          String          @id @default(uuid())
-  name        String
-  character   String?         // Характер контрагента
-  goal        String?         // Цель контрагента
-  description String?         // Описание контрагента
-  photos      String[]        // Массив URL фотографий
-  characterData Json?         @map("character_data")
-  createdAt   DateTime        @default(now()) @map("created_at")
-  updatedAt   DateTime        @updatedAt @map("updated_at")
-  chats       Chat[]
+  id              String          @id @default(uuid())
+  name            String
+  character       String?
+  goal            String?
+  description     String?
+  photos          String[]
+  characterData   Json?           @map("character_data")
+  contextFilePath String?         @map("context_file_path")
+  createdAt       DateTime        @default(now()) @map("created_at")
+  updatedAt       DateTime        @updatedAt @map("updated_at")
+  chats           Chat[]
+  scenarios       Scenario[]
 
   @@map("counterparties")
 }
@@ -117,6 +119,7 @@ model Chat {
   analysis      ChatAnalysis?
   userId        String       @map("user_id")
   user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  ragSessionId  String?      @map("rag_session_id")
 
   @@map("chats")
 }

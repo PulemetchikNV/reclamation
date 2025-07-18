@@ -29,5 +29,8 @@ dist-ssr
 node_modules
 dist
 
+myvenv
+new_venv
+
 backend/src/public/images/generated
 !backend/src/public/images/scenarios

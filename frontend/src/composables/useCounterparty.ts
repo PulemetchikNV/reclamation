@@ -37,11 +37,15 @@ export function useCounterparty() {
     }, getCounterpartyState.value)
   };
 
-  const createCounterparty = async (data: any): Promise<boolean> => {
+  const createCounterparty = async (data: FormData): Promise<boolean> => {
     isCreating.value = true;
     createError.value = null;
     try {
-      await api.post('/api/counterparties', data);
+      await api.post('/api/counterparties', data, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
       await getCounterparties(); // Refresh the list
       return true;
     } catch (err) {

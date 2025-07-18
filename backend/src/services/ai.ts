@@ -2,6 +2,9 @@ import 'dotenv/config';
 import fs from 'fs';
 import path from 'path';
 import crypto from 'crypto';
+import FormData from 'form-data';
+import fetch from 'node-fetch';
+import type { Prisma } from '../generated/prisma/index.js';
 
 type Role = 'user' | 'model';
 
@@ -52,6 +55,64 @@ export const aiService = {
             return data;
         } catch (error) {
             console.error('Ошибка при общении с Gemini API:', error);
+            throw error;
+        }
+    },
+    async setupCharacter(characterData: Prisma.JsonValue, context?: string) {
+        const formData = new FormData();
+        const characterJson = JSON.stringify(characterData);
+        formData.append('character_json', Buffer.from(characterJson), {
+            contentType: 'application/json',
+            filename: 'character.json'
+        });
+
+        if (context) {
+            formData.append('context_file', Buffer.from(context), {
+                contentType: 'text/plain',
+                filename: 'context.txt'
+            });
+        }
+
+        try {
+            const response = await fetch('http://127.0.0.1:5000/setup_character', {
+                method: 'POST',
+                body: formData,
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Ошибка настройки персонажа: ${response.status} ${JSON.stringify(errorData)}`);
+            }
+            
+            const data = await response.json();
+            return data; // { session_id: number }
+        } catch (error) {
+            console.error('Ошибка при настройке персонажа в RAG:', error);
+            throw error;
+        }
+    },
+    async communicateWithRag(sessionId: string, message: string) {
+        try {
+            const response = await fetch('http://127.0.0.1:5000/chat', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({
+                    session_id: sessionId,
+                    user_message: message,
+                }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(`Ошибка RAG API: ${response.status} ${JSON.stringify(errorData)}`);
+            }
+            
+            const data = await response.json();
+            return data; // { response: string }
+        } catch (error) {
+            console.error('Ошибка при общении с RAG API:', error);
             throw error;
         }
     },

@@ -4,6 +4,8 @@ import { aiService } from '../services/ai';
 import { GEN_COUNTERPARTY_PHOTO_PROMPT_BUYER, GEN_COUNTERPARTY_PHOTO_PROMPT_SELLER, GEN_COUNTERPARTY_PROMPT } from 'src/__data__/const/prompts';
 import { removeJsonBraces } from 'src/utils';
 import { getRandomCounterparty } from 'src/__data__/const/counterparties';
+import { Prisma } from '../generated/prisma';
+
 export const counterpartyController = {
   // Получение всех контрагентов
   async getAllCounterparties(_req: Request, res: Response) {
@@ -16,24 +18,27 @@ export const counterpartyController = {
     }
   },
 
-  // Создание нового контрагента
   async createCounterparty(req: Request, res: Response) {
     try {
-      const { name, photos, characterData } = req.body;
-      
-      const description = characterData?.general?.role || 'Нет описания';
-      const character = characterData?.behavior?.personalityType || 'Не указан';
-      const goal = characterData?.behavior?.attitude || 'Не указана';
+      const { name, characterData } = req.body;
+      const parsedCharacterData = JSON.parse(characterData);
 
-      const counterparty = await counterpartyService.createCounterparty({
+      const description = parsedCharacterData?.general?.role || 'Нет описания';
+      const character = parsedCharacterData?.behavior?.personalityType || 'Не указан';
+      const goal = parsedCharacterData?.behavior?.attitude || 'Не указана';
+
+      const contextFilePath = req.file ? `/static/context_files/${req.file.filename}` : undefined;
+
+      const newCounterparty = await counterpartyService.createCounterparty({
         name,
         character,
         goal,
         description,
-        photos,
-        characterData,
+        photos: [], // Placeholder
+        characterData: parsedCharacterData,
+        contextFilePath
       });
-      res.status(201).json(counterparty);
+      res.status(201).json(newCounterparty);
     } catch (error) {
       console.error('Ошибка при создании контрагента:', error);
       res.status(500).json({ error: 'Не удалось создать контрагента' });
@@ -88,24 +93,27 @@ export const counterpartyController = {
     }
   },
 
-  // Обновление контрагента
   async updateCounterparty(req: Request, res: Response) {
     try {
-      const { name, photos, characterData } = req.body;
+      const { id } = req.params;
+      const { name, characterData } = req.body;
+      const parsedCharacterData = characterData ? JSON.parse(characterData) : undefined;
+      
+      const updateData: any = {};
+      if (name) updateData.name = name;
+      if (parsedCharacterData) {
+        updateData.characterData = parsedCharacterData;
+        updateData.description = parsedCharacterData?.general?.role;
+        updateData.character = parsedCharacterData?.behavior?.personalityType;
+        updateData.goal = parsedCharacterData?.behavior?.attitude;
+      }
 
-      const description = characterData?.general?.role || 'Нет описания';
-      const character = characterData?.behavior?.personalityType || 'Не указан';
-      const goal = characterData?.behavior?.attitude || 'Не указана';
-
-      const counterparty = await counterpartyService.updateCounterparty(req.params.id, {
-        name,
-        character,
-        goal,
-        description,
-        photos,
-        characterData,
-      });
-      res.json(counterparty);
+      if (req.file) {
+        updateData.contextFilePath = `/static/context_files/${req.file.filename}`;
+      }
+      
+      const updatedCounterparty = await counterpartyService.updateCounterparty(id, updateData);
+      res.json(updatedCounterparty);
     } catch (error) {
       console.error('Ошибка при обновлении контрагента:', error);
       res.status(500).json({ error: 'Не удалось обновить контрагента' });

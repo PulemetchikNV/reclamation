@@ -19,15 +19,8 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser()); // Для работы с куками
 
-// Статические файлы - учитываем режим работы
-const isProduction = process.env.NODE_ENV === 'production';
-if (isProduction) {
-  // В продакшене используем путь относительно скомпилированных файлов
-  app.use('/static', express.static(path.join(__dirname, 'public')));
-} else {
-  // В разработке используем путь от корня проекта
-  app.use('/static', express.static(path.join(process.cwd(), 'src/public')));
-}
+// Статика
+app.use('/static', express.static(path.join(__dirname, 'public')));
 
 // Маршруты
 app.use('/api/auth', authRoutes);

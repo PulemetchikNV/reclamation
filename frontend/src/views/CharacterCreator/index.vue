@@ -194,6 +194,19 @@
             <Textarea id="references" v-model="form.additional.references" rows="3" fluid />
             <label for="references">Аналоги и референсы</label>
           </IftaLabel>
+          <div class="p-field">
+            <label for="contextFile">Файл контекста (txt)</label>
+            <FileUpload 
+                id="contextFile" 
+                mode="basic" 
+                name="contextFile" 
+                accept=".txt"
+                :maxFileSize="5000000" 
+                @select="onFileSelect"
+                chooseLabel="Выбрать файл"
+                :auto="true"
+            />
+          </div>
         </div>
       </TabPanel>
     </TabView>
@@ -210,6 +223,7 @@ import InputText from 'primevue/inputtext';
 import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
+import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload';
 
 const router = useRouter();
 const { createCounterparty, isCreating } = useCounterparty();
@@ -224,6 +238,14 @@ const form = ref({
   restrictions: { contentFilter: '', forbiddenTopics: '', stopWords: '', behaviorRestrictions: '' },
   additional: { scalability: '', brandTone: '', references: '' }
 });
+
+const contextFile = ref<File | null>(null);
+
+const onFileSelect = (event: FileUploadSelectEvent) => {
+  if (event.files && event.files.length > 0) {
+    contextFile.value = event.files[0];
+  }
+};
 
 const pasteFromClipboard = async () => {
   try {
@@ -328,25 +350,24 @@ const parseAndFillForm = (text: string) => {
 };
 
 const saveCharacter = async () => {
-  const payload = {
-    name: form.value.general.name,
-    character: form.value.behavior.personalityType,
-    goal: form.value.behavior.attitude,
-    description: form.value.general.role,
-    characterData: {
-      general: form.value.general,
-      behavior: form.value.behavior,
-      style: form.value.style,
-      scenarios: form.value.scenarios,
-      visual: form.value.visual,
-      technical: form.value.technical,
-      restrictions: form.value.restrictions,
-      additional: form.value.additional,
-    },
-    photos: [] // Placeholder
-  };
+  const formData = new FormData();
+  formData.append('name', form.value.general.name);
+  formData.append('characterData', JSON.stringify({
+    general: form.value.general,
+    behavior: form.value.behavior,
+    style: form.value.style,
+    scenarios: form.value.scenarios,
+    visual: form.value.visual,
+    technical: form.value.technical,
+    restrictions: form.value.restrictions,
+    additional: form.value.additional,
+  }));
   
-  const success = await createCounterparty(payload);
+  if (contextFile.value) {
+    formData.append('contextFile', contextFile.value);
+  }
+
+  const success = await createCounterparty(formData);
   if (success) {
     router.push('/characters');
   }

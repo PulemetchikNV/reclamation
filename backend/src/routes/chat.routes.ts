@@ -8,7 +8,7 @@ router.get('/', chatController.getAllChats);
 
 // Защищенные маршруты (требуют авторизации)
 router.get('/my', chatController.getUserChats);
-router.post('/', chatController.createChat);
+router.post('/', chatController.createRagChat);
 router.get('/:id', chatController.getChatById);
 router.patch('/:id/title', chatController.updateChatTitle);
 router.delete('/:id', chatController.deleteChat);

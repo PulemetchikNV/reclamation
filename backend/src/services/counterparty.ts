@@ -20,10 +20,14 @@ export const counterpartyService = {
     goal?: string;
     description?: string;
     photos: string[];
-    characterData?: Prisma.JsonValue;
+    characterData?: any;
+    contextFilePath?: string;
   }) {
     return prisma.counterparty.create({
-      data,
+      data: {
+        ...data,
+        characterData: data.characterData || Prisma.JsonNull,
+      },
       include: {
         chats: true
       }
@@ -41,17 +45,24 @@ export const counterpartyService = {
   },
 
   // Обновление контрагента
-  async updateCounterparty(id: string, data: {
-    name?: string;
-    character?: string;
-    goal?: string;
-    description?: string;
-    photos?: string[];
-    characterData?: Prisma.JsonValue;
-  }) {
+  async updateCounterparty(
+    id: string,
+    data: {
+      name?: string;
+      character?: string;
+      goal?: string;
+      description?: string;
+      photos?: string[];
+      characterData?: any;
+      contextFilePath?: string;
+    }
+  ) {
     return prisma.counterparty.update({
       where: { id },
-      data,
+      data: {
+        ...data,
+        characterData: data.characterData || undefined,
+      },
       include: {
         chats: true
       }
