@@ -1,6 +1,7 @@
 import os
 import uuid
 import pathlib
+import requests
 from flask import Flask, request, jsonify
 from pydantic import ValidationError
 from validate import CharacterModel
@@ -29,12 +30,17 @@ except LookupError:
 
 # --- Конфигурация и загрузка моделей ---
 api_key = os.getenv("GOOGLE_API_KEY")
+proxy_api_url = os.getenv("PROXY_API_URL")
+proxy_api_key = os.getenv("PROXY_API_KEY")
+
 if not api_key:
     raise ValueError("Необходимо установить переменную окружения GOOGLE_API_KEY.")
+if not proxy_api_url or not proxy_api_key:
+    raise ValueError("Необходимо установить переменные окружения PROXY_API_URL и PROXY_API_KEY.")
 
+# Оставляем genai для embeddings, но основная модель будет работать через прокси
 genai.configure(api_key=api_key)
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
-model = genai.GenerativeModel('models/gemini-2.0-flash-lite')
 rerank_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
 app = Flask(__name__)
@@ -64,9 +70,33 @@ def contextual_chunker(text: str, chunk_target_size: int = 1000) -> list[str]:
     print(f"Текст разделен на {len(chunks)} смысловых чанков.")
     return chunks
 
+def generate_via_proxy(prompt: str) -> str:
+    """
+    Отправляет запрос к модели Gemini через указанный прокси-сервер.
+    """
+    headers = {
+        'Authorization': f'Bearer {proxy_api_key}',
+        'Content-Type': 'application/json',
+    }
+    data = {
+        "contents": [{"parts": [{"text": prompt}]}]
+    }
+    
+    response = requests.post(proxy_api_url, headers=headers, json=data)
+    response.raise_for_status() # Вызовет исключение для кодов 4xx/5xx
+    
+    # Исправленный парсинг ответа
+    json_response = response.json()
+    if 'candidates' in json_response and len(json_response['candidates']) > 0:
+        content = json_response['candidates'][0].get('content', {})
+        if 'parts' in content and len(content['parts']) > 0:
+            return content['parts'][0].get('text', '')
+    return "" # Возвращаем пустую строку, если ответ не содержит ожидаемых данных
+
+
 def generate_multiple_queries(query: str) -> list[str]:
     """
-    Использует Gemini для генерации нескольких вариантов поискового запроса.
+    Использует Gemini через прокси для генерации нескольких вариантов поискового запроса.
     """
     print(f"Генерация нескольких запросов для: '{query}'")
     prompt = f"""Проанализируй следующий пользовательский вопрос и сгенерируй 3-5 альтернативных поисковых запросов, которые охватывают разные аспекты этого вопроса.
@@ -82,12 +112,12 @@ def generate_multiple_queries(query: str) -> list[str]:
     Вопрос: {query}
     Результат:"""
     try:
-        response = model.generate_content(prompt)
-        queries = [q.strip() for q in response.text.strip().split('\n') if q.strip()]
+        response_text = generate_via_proxy(prompt)
+        queries = [q.strip() for q in response_text.strip().split('\n') if q.strip()]
         print(f"Сгенерированные запросы: {queries}")
         return queries if queries else [query]
     except Exception as e:
-        print(f"Ошибка при генерации запросов: {e}. Используется исходный запрос.")
+        print(f"Ошибка при генерации запросов через прокси: {e}. Используется исходный запрос.")
         return [query]
 
 def create_character_prompt(character_data, rag_context, user_message):
@@ -222,13 +252,15 @@ def chat():
         print(full_prompt)
         print("------------------------------------")
         
-        response = model.generate_content(full_prompt)
-        character_response = response.text
+        character_response = generate_via_proxy(full_prompt)
         
         return jsonify({"status": "success", "response": character_response})
 
     except Exception as e:
-        return jsonify({"error": f"Ошибка при обращении к Gemini: {e}"}), 500
+        return jsonify({"error": f"Ошибка при обращении к прокси Gemini: {e}"}), 500
 
 if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.getenv('RAG_PORT', 5000))
+    host = '0.0.0.0'
+    print(f"Сервер запускается на http://{host}:{port}")
+    app.run(host=host, port=port, debug=True)
