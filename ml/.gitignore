@@ -1,0 +1,14 @@
+# Virtual Environments
+venv/
+myvenv/
+new_venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# FAISS index files
+*.faiss
+
+# Vector store directory
+vector_stores/
