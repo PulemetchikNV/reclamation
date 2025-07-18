@@ -34,7 +34,7 @@ if not api_key:
 
 genai.configure(api_key=api_key)
 embeddings = GoogleGenerativeAIEmbeddings(model="models/embedding-001", google_api_key=api_key)
-model = genai.GenerativeModel('models/gemini-1.5-flash-latest')
+model = genai.GenerativeModel('models/gemini-2.0-flash-lite')
 rerank_model = CrossEncoder('cross-encoder/ms-marco-MiniLM-L-6-v2')
 
 app = Flask(__name__)
