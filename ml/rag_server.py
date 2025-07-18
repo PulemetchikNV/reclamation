@@ -74,6 +74,7 @@ def generate_via_proxy(prompt: str) -> str:
     """
     Отправляет запрос к модели Gemini через указанный прокси-сервер.
     """
+    print(f"Отправка запроса через прокси: {proxy_api_url}")
     headers = {
         'Authorization': f'Bearer {proxy_api_key}',
         'Content-Type': 'application/json',
