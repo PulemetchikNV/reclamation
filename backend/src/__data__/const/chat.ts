@@ -1,0 +1,1 @@
+export const CHAT_END_INDICATOR = '*FINISH CALL*';

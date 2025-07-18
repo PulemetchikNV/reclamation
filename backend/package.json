@@ -1,0 +1,43 @@
+{
+  "name": "reclamaton-backend",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx watch src/index.ts",
+    "build": "tsc --noResolve --noCheck",
+    "start": "tsx src/index.ts",
+    "lint": "tsc --noEmit",
+    "docker:build": "docker build -t reclamaton-backend .",
+    "prisma:generate": "prisma generate",
+    "prisma:migrate": "prisma migrate deploy",
+    "prisma:studio": "prisma studio"
+  },
+  "author": "",
+  "license": "ISC",
+  "keywords": [],
+  "description": "Бэкенд для ИТМО хакатона",
+  "dependencies": {
+    "@prisma/client": "^6.8.2",
+    "axios": "^1.9.0",
+    "bcrypt": "^6.0.0",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.5",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
+    "form-data": "^4.0.2",
+    "jsonwebtoken": "^9.0.2",
+    "multer": "^2.0.0",
+    "prisma": "^6.8.2",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/bcrypt": "^5.0.2",
+    "@types/cookie-parser": "^1.4.8",
+    "@types/cors": "^2.8.18",
+    "@types/express": "^5.0.2",
+    "@types/jsonwebtoken": "^9.0.9",
+    "@types/node": "^20.5.0",
+    "tsx": "^3.12.7",
+    "typescript": "^5.1.6"
+  }
+}

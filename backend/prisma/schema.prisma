@@ -1,0 +1,169 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider = "prisma-client-js"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Модель пользователя
+model User {
+  id            String    @id @default(uuid())
+  email         String    @unique
+  passwordHash  String    @map("password_hash")
+  firstName     String?   @map("first_name")
+  lastName      String?   @map("last_name")
+  avatarUrl     String?   @map("avatar_url")
+  createdAt     DateTime  @default(now()) @map("created_at")
+  updatedAt     DateTime  @updatedAt @map("updated_at")
+  chats         Chat[]
+  refreshTokens RefreshToken[]
+
+  @@map("users")
+}
+
+// Модель для хранения refresh токенов
+model RefreshToken {
+  id        String   @id @default(uuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+// Модель для групп сценариев
+model ScenarioGroup {
+  id          String     @id @default(uuid())
+  title       String
+  description String?
+  createdAt   DateTime   @default(now()) @map("created_at")
+  updatedAt   DateTime   @updatedAt @map("updated_at")
+  scenarios   Scenario[]
+
+  @@map("scenario_groups")
+}
+
+// Модель для сценариев
+model Scenario {
+  id            String     @id @default(uuid())
+  title         String
+  description   String?
+  imageUrl      String?    @map("image_url")
+  aiPrompt      String     @map("ai_prompt")
+  difficultyMeta Json?     @map("difficulty_meta") // JSON с описаниями для разных уровней сложности (easy, medium, hard)
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+  groupId       String     @map("group_id")
+  group         ScenarioGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  chats         Chat[]
+  metadata      Json?        @map("metadata")
+
+  @@map("scenarios")
+}
+
+// Перечисление уровней сложности
+enum Difficulty {
+  easy    @map("0")
+  medium  @map("1")
+  hard    @map("2")
+}
+
+// Перечисление типов контрагентов
+enum CounterpartyType {
+  buyer
+  seller
+}
+
+// Модель контрагента
+model Counterparty {
+  id          String          @id @default(uuid())
+  name        String
+  type        CounterpartyType
+  character   String          // Характер контрагента
+  goal        String          // Цель контрагента
+  description String          // Описание контрагента
+  photos      String[]        // Массив URL фотографий
+  difficulty  Difficulty      @default(medium)
+  createdAt   DateTime        @default(now()) @map("created_at")
+  updatedAt   DateTime        @updatedAt @map("updated_at")
+  chats       Chat[]
+
+  @@map("counterparties")
+}
+
+// Модель квартиры
+model Apartment {
+  id          String    @id @default(uuid())
+  title       String
+  description String
+  photos      String[]   // Массив URL фотографий
+  sources     String    @default("avito") // Источники квартиры (соцсети)
+  createdAt   DateTime  @default(now()) @map("created_at")
+  updatedAt   DateTime  @updatedAt @map("updated_at")
+  chats       Chat[]
+
+  @@map("apartments")
+}
+
+// Модель для хранения чатов
+model Chat {
+  id            String       @id @default(uuid())
+  title         String       @default("Новый чат")
+  createdAt     DateTime     @default(now()) @map("created_at")
+  updatedAt     DateTime     @updatedAt @map("updated_at")
+  messages      Message[]
+  scenarioId    String?      @map("scenario_id")
+  scenario      Scenario?    @relation(fields: [scenarioId], references: [id], onDelete: Cascade)
+  counterpartyId String      @map("counterparty_id")
+  counterparty  Counterparty @relation(fields: [counterpartyId], references: [id], onDelete: Cascade)
+  apartmentId   String?      @map("apartment_id")
+  apartment     Apartment?   @relation(fields: [apartmentId], references: [id], onDelete: SetNull)
+  isFinished    Boolean      @default(false)
+  analysis      ChatAnalysis?
+  userId        String       @map("user_id")
+  user          User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("chats")
+}
+
+// Модель для хранения сообщений в чатах
+model Message {
+  id        String   @id @default(uuid())
+  content   String
+  role      Role     @default(user)
+  createdAt DateTime @default(now()) @map("created_at")
+  chatId    String   @map("chat_id")
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+  hidden    Boolean  @default(false)
+
+  @@map("messages")
+}
+
+model ChatAnalysis {
+  id        String   @id @default(uuid())
+  goodSides String[]
+  badSides  String[]
+  userCharacteristics Json? @map("user_characteristics")
+  rating    Int
+  chatId    String   @unique @map("chat_id")
+  chat      Chat     @relation(fields: [chatId], references: [id], onDelete: Cascade)
+
+  @@map("chat_analyses")
+}
+
+// Перечисление ролей сообщений
+enum Role {
+  user
+  model
+}
