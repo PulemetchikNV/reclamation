@@ -11,6 +11,11 @@ import { apartmentService } from 'src/services/apartment';
 import authService from '../services/auth';
 import { HINT_PROMPT } from 'src/__data__/const/prompts.js';
 import { getFormattedMessages, getGeminiText } from 'src/utils.js';
+import { dirname } from 'path';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 // Интерфейс для определения структуры сообщения
 interface MessageWithRole {
@@ -326,11 +331,11 @@ export const chatController = {
       }
 
       await chatService.addMessage(chatId, content, 'user');
-      
+
       const ragResponse = await aiService.communicateWithRag(chat.ragSessionId, content);
       const modelResponse = ragResponse.response || 'Извините, не удалось получить ответ.';
 
-      await chatService.addMessage(chatId, modelResponse, 'model');
+        await chatService.addMessage(chatId, modelResponse, 'model');
 
       const updatedChat = await chatService.getChatById(chatId);
       res.json(updatedChat);

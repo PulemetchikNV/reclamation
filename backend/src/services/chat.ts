@@ -72,6 +72,7 @@ export const chatService = {
     counterpartyId: string;
     apartmentId?: string;
     userId: string;
+    ragSessionId: string;
   }) {
     return prisma.chat.create({
       data: {
@@ -79,7 +80,8 @@ export const chatService = {
         scenarioId: data.scenarioId,
         counterpartyId: data.counterpartyId,
         apartmentId: data.apartmentId,
-        userId: data.userId
+        userId: data.userId,
+        ragSessionId: data.ragSessionId
       },
       include: {
         messages: {

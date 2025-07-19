@@ -7,7 +7,6 @@ import { useScenarios } from '../../composables/useScenarios';
 import { useCounterparty } from '../../composables/useCounterparty';
 import CounterPartyCard from '../../components/CounterPartyCard.vue';
 import { useApartament } from '../../composables/useApartament';
-import { getScenarioInfo } from '../../utils/scenario';
 import Dialog from 'primevue/dialog';
 
 // Компоненты PrimeVue
@@ -40,49 +39,69 @@ let apiUrl = inject(API_URL_KEY);
 let staticUrl = getStaticUrl(apiUrl!);
 
 const isDialogVisible = ref(false);
-const selectedScenarioId = ref<string | null>(null);
+const characterId = ref<string | null>(null);
 
-const openCharacterSelection = async (scenarioId: string) => {
-  selectedScenarioId.value = scenarioId;
-  await getCounterparties();
-  isDialogVisible.value = true;
-};
+const startChat = async (scenarioId: string) => {
+  if (!characterId.value) {
+    addMessage({
+      summary: 'Персонаж не выбран',
+      detail: 'Невозможно начать чат без выбранного персонажа.',
+      severity: 'error'
+    });
+    return;
+  }
 
-const handleCharacterSelect = async (counterpartyId: string) => {
-  if (!selectedScenarioId.value) return;
-
-  const groupScenario = currentGroup.value?.scenarios?.find(s => s.id === selectedScenarioId.value);
+  const groupScenario = scenarios.value.find(s => s.id === scenarioId);
+  if (!groupScenario) return;
 
   try {
-    const apartament = await generateApartament(groupScenario!);
+    const apartament = await generateApartament(groupScenario);
     if (apartament) {
-      router.push(`/scenario/${selectedScenarioId.value}/counterparty/${counterpartyId}?apartamentId=${apartament.id}`);
+      router.push(`/scenario/${scenarioId}/counterparty/${characterId.value}?apartamentId=${apartament.id}`);
     } else {
-      throw new Error('Ошибка при генерации объекта недвижимости');
+      throw new Error('Ошибка при генерации контекста сценария');
     }
   } catch (error: any) {
     addMessage({
       summary: 'Что-то пошло не так',
       detail: error.message,
       severity: 'error'
-    })
-  } finally {
-    isDialogVisible.value = false;
+    });
   }
+};
+
+const openCharacterDialog = async () => {
+  await getCounterparties();
+  isDialogVisible.value = true;
+};
+
+const handleCharacterChange = (newCharacterId: string) => {
+  characterId.value = newCharacterId;
+  router.replace({ query: { ...route.query, characterId: newCharacterId } });
+  isDialogVisible.value = false;
 };
 
 // Возврат на страницу со списком групп
 const goBack = () => {
-  router.push('/scenario-groups');
+  const query = characterId.value ? `?characterId=${characterId.value}` : '';
+  router.push(`/scenario-groups${query}`);
 };
 
 // Загрузка сценариев для выбранной группы
 onMounted(async () => {
-  const groupId = route.params.id;
+  characterId.value = route.query.characterId as string | null;
+  const groupId = route.params.id as string;
+
+  if (!characterId.value) {
+    addMessage({ severity: 'warn', summary: 'Персонаж не выбран', detail: 'Возвращаем к выбору персонажа...', life: 3000 });
+    router.push('/characters');
+    return;
+  }
+  
   if (groupId) {
     await getGroupScenarios(groupId as string);
   }
-})
+});
 </script>
 
 <template>
@@ -93,7 +112,15 @@ onMounted(async () => {
         class="back-button" 
         @click="goBack" 
       />
-      <h1 class="page-title">{{ currentGroup?.title || 'Сценарии' }}</h1>
+      <div class="header-content">
+        <h1 class="page-title">{{ currentGroup?.title || 'Сценарии' }}</h1>
+        <Button 
+          label="Поменять персонажа" 
+          @click="openCharacterDialog" 
+          link 
+          class="change-character-button"
+        />
+      </div>
     </div>
 
     <p v-if="currentGroup?.description" class="group-description">
@@ -122,7 +149,7 @@ onMounted(async () => {
             v-for="scenario in slotProps.items" 
             :key="scenario.id" 
             class="scenario-card"
-            @click="openCharacterSelection(scenario.id)"
+            @click="startChat(scenario.id)"
           >
             <div class="scenario-image-container">
               <img 
@@ -154,10 +181,15 @@ onMounted(async () => {
       :visible="isDialogVisible" 
       @update:visible="isDialogVisible = false"
       modal 
-      header="Выберите персонажа"
-      :style="{ width: '50vw' }"
+      header="Поменять персонажа"
+      :style="{ width: '90vw', maxWidth: '800px' }"
+      :pt="{
+        root: { class: 'characters-dialog' },
+        header: { class: 'characters-dialog-header' },
+        content: { class: 'characters-dialog-content' }
+      }"
     >
-      <div v-if="isCounterpartiesLoading" class="loader">
+      <div v-if="isCounterpartiesLoading" class="loader-dialog">
         <ProgressSpinner />
       </div>
       <div v-else class="characters-grid">
@@ -166,12 +198,16 @@ onMounted(async () => {
           :key="character.id"
           :counterparty="character"
           :can-change-difficulty="false"
-          @click="handleCharacterSelect(character.id)"
+          @click="handleCharacterChange(character.id)"
+          class="character-selection-card"
         />
       </div>
     </Dialog>
     <Dialog :visible="isGenerateApartamentLoading" :modal="true" :draggable="false" :resizable="false">
-      <p>Генерация контекста для сценария...</p>
+      <div class="generation-dialog">
+        <ProgressSpinner style="width: 30px; height: 30px" />
+        <p>Генерация контекста для сценария...</p>
+      </div>
     </Dialog>
   </div>
 </template>
@@ -189,6 +225,12 @@ onMounted(async () => {
   margin-bottom: 1rem;
 }
 
+.header-content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
 .back-button {
   margin-right: 0.5rem;
 }
@@ -197,6 +239,14 @@ onMounted(async () => {
   font-size: 1.875rem;
   font-weight: bold;
   display: inline-block;
+  margin: 0;
+}
+
+.change-character-button {
+  padding: 0;
+  margin-top: -5px;
+  font-size: 0.9rem;
+  font-weight: normal;
 }
 
 .group-description {
@@ -205,6 +255,8 @@ onMounted(async () => {
 }
 
 .loader {
+  display: block;
+  margin: 2rem auto;
   width: 2.5rem;
   height: 2.5rem;
 }
@@ -215,8 +267,8 @@ onMounted(async () => {
 
 .scenarios-wrapper {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
 }
 
 .scenario-card {
@@ -225,32 +277,35 @@ onMounted(async () => {
   flex-direction: column;
   border: 1px solid #e2e8f0;
   background: white;
-  border-radius: 0.5rem;
-  padding: 1rem;
+  border-radius: 0.75rem;
+  overflow: hidden;
   cursor: pointer;
   transition: all 0.2s ease;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
 }
 
 .scenario-card:hover {
   border-color: var(--primary-color, #4318FF);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  transform: translateY(-4px);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
 }
 
 .scenario-image-container {
-  margin-bottom: 0.75rem;
+  width: 100%;
+  aspect-ratio: 16 / 9;
 }
 
 .scenario-image {
   width: 100%;
-  height: 10rem;
+  height: 100%;
   object-fit: cover;
-  border-radius: 0.5rem;
 }
 
 .scenario-content {
   flex: 1;
   display: flex;
   flex-direction: column;
+  padding: 1rem;
 }
 
 .scenario-title {
@@ -292,10 +347,34 @@ onMounted(async () => {
   color: #6b7280;
 }
 
+.loader-dialog {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 2rem;
+}
+
 .characters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 1rem;
+}
+
+.character-selection-card {
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.character-selection-card:hover {
+  transform: scale(1.03);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+.generation-dialog {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
 }
 
 @media (max-width: 480px) {
@@ -306,5 +385,17 @@ onMounted(async () => {
   .group-description {
     text-align: start;
   }
+  .scenarios-wrapper {
+    grid-template-columns: 1fr;
+  }
+}
+</style>
+<style>
+.characters-dialog .p-dialog-header {
+  padding: 1rem 1.5rem;
+}
+.characters-dialog .p-dialog-content {
+  padding: 0 1.5rem 1.5rem 1.5rem;
+  background-color: #f8f9fa;
 }
 </style>

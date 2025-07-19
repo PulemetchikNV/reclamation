@@ -5,28 +5,28 @@ export type ChatWithRelations = Chat & {
   messages: Message[];
   scenario: ScenarioWithRelations | null;
   counterparty: Counterparty;
-};
+  };
 
 // Типы для сценария
 export type ScenarioWithRelations = Scenario & {
   group: ScenarioGroup;
   chats: Chat[];
-};
+  };
 
 // Типы для группы сценариев
 export type ScenarioGroupWithRelations = ScenarioGroup & {
   scenarios: Scenario[];
-};
+  };
 
 // Типы для контрагента
 export type CounterpartyWithRelations = Counterparty & {
   chats: Chat[];
-};
+  };
 
 // Типы для сообщения
 export type MessageWithRelations = Message & {
   chat: Chat;
-};
+  };
 
 // Типы для создания чата
 export type CreateChatInput = {

@@ -101,3 +101,13 @@ a:hover {
 .text-start {
   text-align: start;
 }
+
+.clickable {
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.clickable:hover {
+  outline: 2px solid var(--primary-color, #4318FF);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}

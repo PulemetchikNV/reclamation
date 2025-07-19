@@ -49,8 +49,11 @@ export const seedService = {
               aiPrompt: scenarioData.aiPrompt,
               description: scenarioData.description,
               scenarioMeta: scenarioData.scenarioMeta || null,
-              groupId: group.id,
-              metadata: (scenarioData as any).metadata || {}
+              group: {
+                connect: {
+                  id: group.id
+                }
+              }
             }
           });
         }

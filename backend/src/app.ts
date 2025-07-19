@@ -12,12 +12,17 @@ import profileRoutes from './routes/profile.routes';
 import transcriptionRoutes from './routes/transcription.routes';
 import synthesisRoutes from './routes/synthesis.routes';
 import { authGuard } from './middleware/auth.middleware';
+import { fileURLToPath } from 'url';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser()); // Для работы с куками
+
 
 // Статика
 app.use('/static', express.static(path.join(__dirname, 'public')));

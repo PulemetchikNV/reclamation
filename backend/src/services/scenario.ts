@@ -8,7 +8,7 @@ export const scenarioService = {
     return prisma.scenario.findMany({
       include: {
         group: true,
-        chats: true
+        counterparties: true,
       }
     });
   },

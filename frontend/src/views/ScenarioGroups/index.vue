@@ -1,7 +1,9 @@
 <template>
   <div class="scenario-groups-container">
     <div class="header">
-        <h1 class="page-title">Группы сценариев</h1>
+        <h1 class="page-title">{{
+          characterId ? 'Выберите группу сценариев' : 'Группы сценариев'
+        }}</h1>
     </div>
 
     <!-- Индикатор загрузки -->
@@ -51,8 +53,8 @@
 </template>
 
 <script setup>
-import { onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { onMounted, computed } from 'vue';
+import { useRouter, useRoute } from 'vue-router';
 import { useScenarios } from '../../composables/useScenarios';
 
 // Компоненты PrimeVue
@@ -61,7 +63,10 @@ import Message from 'primevue/message';
 import DataView from 'primevue/dataview';
 
 const router = useRouter();
+const route = useRoute();
 const { getScenarioGroups, scenarioGroups, isGroupsLoading, isGroupsError } = useScenarios();
+
+const characterId = computed(() => route.query.characterId);
 
 // Загрузка данных при монтировании компонента
 onMounted(async () => {
@@ -70,7 +75,7 @@ onMounted(async () => {
 
 // Навигация к странице сценариев выбранной группы
 const navigateToScenarios = (groupId) => {
-  router.push(`/scenario-group/${groupId}`);
+  router.push(`/scenario-group/${groupId}?characterId=${characterId.value}`);
 };
 </script>
 

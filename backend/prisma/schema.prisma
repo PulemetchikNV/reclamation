@@ -65,8 +65,8 @@ model Scenario {
   createdAt       DateTime       @default(now()) @map("created_at")
   updatedAt       DateTime       @updatedAt @map("updated_at")
   chats           Chat[]
-  scenarioGroupId String?        @map("scenario_group_id")
-  scenarioGroup   ScenarioGroup? @relation(fields: [scenarioGroupId], references: [id])
+  groupId String?        @map("group_id")
+  group   ScenarioGroup? @relation(fields: [groupId], references: [id])
   counterparties  Counterparty[]
 
   @@map("scenarios")

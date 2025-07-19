@@ -4,7 +4,7 @@ const router = createRouter({
     routes: [
         {
             path: '/',
-            redirect: '/scenario-groups'
+            redirect: '/characters'
         },  
         {
             path: '/login',

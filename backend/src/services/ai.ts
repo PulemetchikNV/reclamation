@@ -4,6 +4,7 @@ import path from 'path';
 import crypto from 'crypto';
 import FormData from 'form-data';
 import fetch from 'node-fetch';
+import axios, { AxiosError } from 'axios';
 import type { Prisma } from '../generated/prisma/index.js';
 
 type Role = 'user' | 'model';
@@ -11,6 +12,7 @@ type Role = 'user' | 'model';
 const isProxyApiEnabled = process.env.IS_PROXY_API_ENABLED === 'true';
 const isImageGenerationEnabled = process.env.IS_IMAGE_GENERATION_ENABLED === 'true';
 const apiKey = isProxyApiEnabled ? process.env.PROXY_API_KEY : process.env.GEMINI_API_KEY;
+const ragApiUrl = process.env.RAG_API_URL || 'http://localhost:5001';
 
 console.log('ENV IS =====', process.env)
 
@@ -60,13 +62,12 @@ export const aiService = {
     },
     async setupCharacter(characterData: Prisma.JsonValue, context?: string) {
         const formData = new FormData();
-        const characterJson = JSON.stringify(characterData);
-        formData.append('character_json', Buffer.from(characterJson), {
-            contentType: 'application/json',
-            filename: 'character.json'
-        });
+        const characterJson = JSON.stringify({ characterData });
+        // Отправляем JSON как обычное текстовое поле
+        formData.append('character_json', characterJson);
 
         if (context) {
+            // Файл с контекстом по-прежнему отправляется как файл
             formData.append('context_file', Buffer.from(context), {
                 contentType: 'text/plain',
                 filename: 'context.txt'
@@ -74,26 +75,29 @@ export const aiService = {
         }
 
         try {
-            const response = await fetch('http://127.0.0.1:5000/setup_character', {
-                method: 'POST',
-                body: formData,
+            const response = await axios.post(`${ragApiUrl}/setup_character`, formData, {
+                headers: {
+                    ...formData.getHeaders()
+                }
             });
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(`Ошибка настройки персонажа: ${response.status} ${JSON.stringify(errorData)}`);
+            if (response.status !== 200) {
+                throw new Error(`Ошибка настройки персонажа: ${response.status} ${JSON.stringify(response.data)}`);
             }
             
-            const data = await response.json();
-            return data; // { session_id: number }
-        } catch (error) {
-            console.error('Ошибка при настройке персонажа в RAG:', error);
+            return response.data; // { session_id: number }
+        } catch (error: any) {
+            if('response' in error) {
+                console.error('Ошибка при настройке персонажа в RAG:', JSON.stringify(error?.response?.data));
+            } else {
+                console.error('Ошибка при настройке персонажа в RAG:', JSON.stringify(error));
+            }
             throw error;
         }
     },
     async communicateWithRag(sessionId: string, message: string) {
         try {
-            const response = await fetch('http://127.0.0.1:5000/chat', {
+            const response = await fetch(`${ragApiUrl}/chat`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

@@ -16,7 +16,7 @@ export function useCounterparty() {
   const isCreating = ref(false);
   const createError = ref<string | null>(null);
 
-  const getCounterparties = async () => {
+    const getCounterparties = async () => {
     isCounterpartiesLoading.value = true;
     isCounterpartiesError.value = null;
     try {
@@ -29,13 +29,13 @@ export function useCounterparty() {
     }
   };
 
-  const getCounterparty = async (id: string) => {
-    return await getRequest<Counterparty>(async () => {
+    const getCounterparty = async (id: string) => {
+        return await getRequest<Counterparty>(async () => {
       const response = await api.get<Counterparty>(`/api/counterparties/${id}`);
       currentCounterparty.value = response.data
       return response.data;
     }, getCounterpartyState.value)
-  };
+    };
 
   const createCounterparty = async (data: FormData): Promise<boolean> => {
     isCreating.value = true;
@@ -54,17 +54,17 @@ export function useCounterparty() {
     } finally {
       isCreating.value = false;
     }
-  };
+    };
 
-  return {
-    counterparties,
+    return {
+        counterparties,
     isCounterpartiesLoading,
     isCounterpartiesError,
-    getCounterparties,
+        getCounterparties,
     isCreating,
     createError,
     createCounterparty,
-    getCounterparty,
-    ...convertRequestStateToRefs(getCounterpartyState.value, 'counterparty'),
-  };
+        getCounterparty,
+        ...convertRequestStateToRefs(getCounterpartyState.value, 'counterparty'),
+    };
 } 

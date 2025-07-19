@@ -16,6 +16,8 @@
         :key="character.id"
         :counterparty="character"
         :can-change-difficulty="false"
+        class="clickable"
+        @click="navigateToCharacter(character.id)"
       />
     </div>
   </div>
@@ -34,6 +36,10 @@ const router = useRouter();
 
 const navigateToCreator = () => {
   router.push('/character-creator');
+};
+
+const navigateToCharacter = (id: string) => {
+  router.push(`/scenario-groups?characterId=${id}`);
 };
 
 onMounted(getCounterparties);

@@ -29,12 +29,12 @@ except LookupError:
     print("Загрузка 'punkt' завершена.")
 
 # --- Конфигурация и загрузка моделей ---
-api_key = os.getenv("GOOGLE_API_KEY")
+api_key = os.getenv("GEMINI_API_KEY")
 proxy_api_url = os.getenv("PROXY_API_URL")
 proxy_api_key = os.getenv("PROXY_API_KEY")
 
 if not api_key:
-    raise ValueError("Необходимо установить переменную окружения GOOGLE_API_KEY.")
+    raise ValueError("Необходимо установить переменную окружения GEMINI_API_KEY.")
 if not proxy_api_url or not proxy_api_key:
     raise ValueError("Необходимо установить переменные окружения PROXY_API_URL и PROXY_API_KEY.")
 
@@ -168,6 +168,7 @@ def setup_character():
         if file.filename != '':
             try:
                 file_content = file.read().decode('utf-8')
+                print(f"Содержимое файла: {file_content}")
                 
                 # 1. Умное разделение на чанки
                 chunks = contextual_chunker(file_content)

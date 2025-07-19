@@ -48,11 +48,11 @@ export const counterpartyService = {
   async updateCounterparty(
     id: string,
     data: {
-      name?: string;
-      character?: string;
-      goal?: string;
-      description?: string;
-      photos?: string[];
+    name?: string;
+    character?: string;
+    goal?: string;
+    description?: string;
+    photos?: string[];
       characterData?: any;
       contextFilePath?: string;
     }
