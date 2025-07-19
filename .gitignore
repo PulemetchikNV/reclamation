@@ -31,7 +31,8 @@ dist
 
 myvenv
 new_venv
-tmp
+tmp/
+.env
 
 backend/src/public/images/generated
 !backend/src/public/images/scenarios
