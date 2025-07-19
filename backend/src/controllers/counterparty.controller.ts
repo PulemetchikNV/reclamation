@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { counterpartyService } from '../services/counterparty.js';
+import { voiceService } from '../services/voice.service.js';
 import { aiService } from '../services/ai';
 import { GEN_COUNTERPARTY_PHOTO_PROMPT_BUYER, GEN_COUNTERPARTY_PHOTO_PROMPT_SELLER, GEN_COUNTERPARTY_PROMPT } from 'src/__data__/const/prompts';
 import { removeJsonBraces } from 'src/utils';
@@ -30,11 +31,22 @@ export const counterpartyController = {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const characterPhoto = files?.characterPhoto?.[0];
       const contextFile = files?.contextFile?.[0];
+      const voiceFile = files?.voiceFile?.[0];
 
       const photoPath = characterPhoto ? `/images/characters/${characterPhoto.filename}` : undefined;
-      console.log({photoPath});
       const contextFilePath = contextFile ? `/context_files/${contextFile.filename}` : undefined;
+      const voiceFilePath = voiceFile ? voiceFile.path : undefined;
 
+      let minimaxVoiceId: string | null = null;
+      if (voiceFile) {
+        const fileId = await voiceService.uploadVoiceFile(voiceFile.path);
+        if (fileId) {
+          // Генерируем уникальное имя для голоса, можно использовать ID персонажа, но его еще нет
+          const voiceName = `char_voice_${Date.now()}`;
+          minimaxVoiceId = await voiceService.cloneVoice(fileId, voiceName);
+        }
+      }
+      
       const newCounterparty = await counterpartyService.createCounterparty({
         name,
         character,
@@ -42,8 +54,11 @@ export const counterpartyController = {
         description,
         photos: photoPath ? [photoPath] : [],
         characterData: parsedCharacterData,
-        contextFilePath
+        contextFilePath,
+        voiceFile: voiceFilePath,
+        minimaxVoiceId: minimaxVoiceId,
       });
+
       res.status(201).json(newCounterparty);
     } catch (error) {
       console.error('Ошибка при создании контрагента:', error);
@@ -79,9 +94,11 @@ export const counterpartyController = {
       const files = req.files as { [fieldname: string]: Express.Multer.File[] };
       const characterPhoto = files?.characterPhoto?.[0];
       const contextFile = files?.contextFile?.[0];
+      const voiceFile = files?.voiceFile?.[0];
       
       const photoPath = characterPhoto ? `/images/characters/${characterPhoto.filename}` : undefined;
       const contextFilePath = contextFile ? `/context_files/${contextFile.filename}` : undefined;
+      const voiceFilePath = voiceFile ? voiceFile.path : undefined;
 
       const updateData: any = {
         name,
@@ -101,6 +118,18 @@ export const counterpartyController = {
         updateData.contextFilePath = contextFilePath;
       } else if (removeContextFile === 'true') {
         updateData.contextFilePath = null;
+      }
+
+      if (voiceFile) {
+        const fileId = await voiceService.uploadVoiceFile(voiceFile.path);
+        if (fileId) {
+          const voiceName = `char_voice_${id}_${Date.now()}`;
+          const newMinimaxId = await voiceService.cloneVoice(fileId, voiceName);
+          if (newMinimaxId) {
+            updateData.minimaxVoiceId = newMinimaxId;
+            updateData.voiceFile = voiceFilePath;
+          }
+        }
       }
 
       const updatedCounterparty = await counterpartyService.updateCounterparty(id, updateData);

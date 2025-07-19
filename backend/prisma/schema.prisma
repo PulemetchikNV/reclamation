@@ -82,6 +82,8 @@ model Counterparty {
   photos          String[]
   characterData   Json?           @map("character_data")
   contextFilePath String?         @map("context_file_path")
+  voiceFile       String?         @map("voice_file")
+  minimaxVoiceId  String?         @map("minimax_voice_id")
   createdAt       DateTime        @default(now()) @map("created_at")
   updatedAt       DateTime        @updatedAt @map("updated_at")
   chats           Chat[]

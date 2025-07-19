@@ -7,11 +7,13 @@ import path from 'path';
 // Настройка хранилища для multer
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    let uploadPath = 'src/public/'; 
+    let uploadPath = 'src/public/'; // Путь без src/
     if (file.fieldname === 'characterPhoto') {
         uploadPath = path.join(uploadPath, 'images/characters');
     } else if (file.fieldname === 'contextFile') {
         uploadPath = path.join(uploadPath, 'context_files');
+    } else if (file.fieldname === 'voiceFile') {
+        uploadPath = path.join(uploadPath, 'voices');
     } else {
         uploadPath = path.join(uploadPath, 'uploads');
     }
@@ -33,14 +35,16 @@ const router = Router();
 router.get('/', counterpartyController.getAllCounterparties);
 router.post('/', upload.fields([
     { name: 'characterPhoto', maxCount: 1 },
-    { name: 'contextFile', maxCount: 1 }
+    { name: 'contextFile', maxCount: 1 },
+    { name: 'voiceFile', maxCount: 1 }
 ]), counterpartyController.createCounterparty);
 
 router.get('/:id', counterpartyController.getCounterpartyById);
 
 router.put('/:id', upload.fields([
     { name: 'characterPhoto', maxCount: 1 },
-    { name: 'contextFile', maxCount: 1 }
+    { name: 'contextFile', maxCount: 1 },
+    { name: 'voiceFile', maxCount: 1 }
 ]), counterpartyController.updateCounterparty);
 
 router.delete('/:id', counterpartyController.deleteCounterparty);

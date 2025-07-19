@@ -11,6 +11,7 @@ import authRoutes from './routes/auth.routes';
 import profileRoutes from './routes/profile.routes';
 import transcriptionRoutes from './routes/transcription.routes';
 import synthesisRoutes from './routes/synthesis.routes';
+import { voiceRoutes } from './routes/voice.routes';
 import { authGuard } from './middleware/auth.middleware';
 import { fileURLToPath } from 'url';
 
@@ -37,6 +38,7 @@ app.use('/api/apartments', authGuard, apartmentRoutes);
 app.use('/api/profile', authGuard, profileRoutes);
 app.use('/api/transcription', authGuard, transcriptionRoutes);
 app.use('/api/synthesize', authGuard, synthesisRoutes);
+app.use('/api/voice', voiceRoutes);
 app.use('/synthesize', synthesisRoutes); // Прямой маршрут без аутентификации для совместимости с запросом через curl
 
 // Простой запрос для проверки, что сервер работает

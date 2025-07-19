@@ -4,7 +4,7 @@
       <h1 class="title">{{ pageTitle }}</h1>
       <div class="actions">
         <Button icon="pi pi-clipboard" @click="pasteFromClipboard" severity="secondary" />
-        <Button label="Сохранить" icon="pi pi-check" @click="saveCharacter" />
+        <Button label="Сохранить" :loading="isSaving" icon="pi pi-check" @click="saveCharacter" />
       </div>
     </div>
     <TabView>
@@ -222,6 +222,35 @@
             <label for="references">Аналоги и референсы</label>
           </IftaLabel>
             <div class="p-field">
+                <label for="voiceFile">Файл голоса (не более 20мб)</label>
+                 <FileUpload 
+                    name="voiceFile"
+                    :show-upload-button="false" 
+                    :show-cancel-button="false"
+                    accept=".mp3,.wav" 
+                    :maxFileSize="20000000"
+                    @select="onVoiceFileSelect" 
+                >
+                    <template #header="{ chooseCallback, clearCallback, files }">
+                        <div class="file-header">
+                            <Button @click="chooseCallback" icon="pi pi-volume-up" label="Выбрать" />
+                            <Button @click="() => { clearCallback(); removeVoiceFile(); }" icon="pi pi-times" label="Удалить" class="p-button-danger" :disabled="!voiceFile && !voiceFileUrl" />
+                        </div>
+                    </template>
+                    <template #content>
+                        <div v-if="voiceFileUrl || voiceFile" class="preview-container file-preview">
+                            <i class="pi pi-volume-up" style="font-size: 2rem;"></i>
+                            <span>{{ voiceFile?.name || getFileNameFromUrl(voiceFileUrl) }}</span>
+                            <audio v-if="voiceFileUrl" :src="`${staticUrl}${voiceFileUrl}`" controls></audio>
+                        </div>
+                        <div v-else class="empty-content">
+                            <i class="pi pi-upload" />
+                            <p>Перетащите .mp3 или wav файл сюда для загрузки.</p>
+                        </div>
+                    </template>
+                </FileUpload>
+            </div>
+            <div class="p-field">
                 <label for="contextFile">Файл контекста (txt)</label>
                  <FileUpload 
                     name="contextFile"
@@ -285,6 +314,8 @@ const {
   isCounterpartiesLoading 
 } = useCounterparty();
 
+const isSaving = ref(false);
+
 const form = ref({
   general: { name: '', role: '', format: '', audience: '', language: '' },
   behavior: { personalityType: '', keyTraits: '', tone: '', proactivity: '', attitude: '' },
@@ -298,11 +329,15 @@ const form = ref({
 
 const contextFile = ref<File | null>(null);
 const characterPhoto = ref<File | null>(null);
+const voiceFile = ref<File | null>(null);
+
 const photoUrl = ref<string | null>(null);
 const contextFileUrl = ref<string | null>(null);
+const voiceFileUrl = ref<string | null>(null);
 
 const removePhotoFlag = ref(false);
 const removeContextFileFlag = ref(false);
+const removeVoiceFileFlag = ref(false);
 
 const apiUrl = inject(API_URL_KEY);
 const staticUrl = getStaticUrl(apiUrl as string);
@@ -340,6 +375,7 @@ watch(currentCounterparty, (newVal) => {
     }
     photoUrl.value = newVal.photos?.[0] || null;
     contextFileUrl.value = newVal.contextFilePath || null;
+    voiceFileUrl.value = newVal.voiceFile || null;
   }
 });
 
@@ -376,6 +412,12 @@ const removeContextFile = () => {
     contextFile.value = null;
     contextFileUrl.value = null;
     removeContextFileFlag.value = true;
+};
+
+const removeVoiceFile = () => {
+    voiceFile.value = null;
+    voiceFileUrl.value = null;
+    removeVoiceFileFlag.value = true;
 };
 
 const getFileNameFromUrl = (url: string | null) => {
@@ -511,15 +553,32 @@ const saveCharacter = async () => {
     formData.append('removeContextFile', 'true');
   }
 
+  if (voiceFile.value) {
+    formData.append('voiceFile', voiceFile.value);
+  } else if (removeVoiceFileFlag.value) {
+    formData.append('removeVoiceFile', 'true');
+  }
+  
   let success = false;
+  isSaving.value = true;
+
   if (isEditMode.value) {
     success = await updateCounterparty(props.id, formData);
   } else {
     success = await createCounterparty(formData);
   }
+  isSaving.value = false;
 
   if (success) {
     router.push('/characters');
+  }
+};
+
+const onVoiceFileSelect = (event: FileUploadSelectEvent) => {
+  if (event.files && event.files.length > 0) {
+    voiceFile.value = event.files[0];
+    voiceFileUrl.value = null;
+    removeVoiceFileFlag.value = false;
   }
 };
 

@@ -1,0 +1,3 @@
+# Ignore all uploaded character images and voices
+/images/characters/*
+/voices/* 

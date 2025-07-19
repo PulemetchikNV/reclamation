@@ -1,136 +1,77 @@
 <template>
-  <div 
-    class="messages-container"
-    :style="{ maxHeight: maxHeight ? `${maxHeight}px` : 'auto' }"
-  >
-    <div
-        v-for="message in messages"
-        :key="message.id"
-        class="message"
-        :class="message.role"
-    >
-      <div class="message-header">
-        <span class="role">{{ message.role === 'user' ? 'Вы' : 'AI' }}
-          <template v-if="message.hidden">--hidden--</template>
-        </span>
-
-        <div class="spacer" />
-        <Button 
-          v-if="message.role === 'model' && message.audioUrl" 
-          :disabled="isSpeaking"
-          :icon="isSpeaking && currentSpeakingId === message.id ? 'pi pi-volume-up' : 'pi pi-volume-off'"
-          size="small"
-          style="margin-right: 5px"
-          class="speech-button"
-          rounded
-          text
-          @click="speakMessage(message.content)"
-        />
-        <span class="created-at">{{ formatDate(message.createdAt) }}</span>
-        
-      </div>
+  <div class="messages-container">
+    <div v-for="message in messages" :key="message.id" :class="['message', messageClass(message)]">
       <div class="message-content">
-        {{ message.content || '-' }}
+        <Markdown :source="message.content" />
+        <Button 
+          v-if="message.role === 'model'" 
+          :icon="isPlaying === message.id ? 'pi pi-stop-circle' : 'pi pi-play-circle'" 
+          class="p-button-rounded p-button-text play-button"
+          @click="synthesizeAndPlay(message)"
+          v-tooltip.top="'Озвучить сообщение'"
+        />
       </div>
-    </div>
-    <div v-if="messages.length === 0" class="no-messages">
-      Нет сообщений
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
-import { useSpeech } from '../../composables/useSpeech';
-import { addMessage } from '../../__data__/store';
+import { computed, ref } from 'vue';
+import type { PropType } from 'vue';
+import type { Message } from '../../../types/chat';
+import Markdown from 'vue-markdown-it';
 import Button from 'primevue/button';
+import { axiosInstance } from '../../../plugins/axios';
 
-interface Message {
-  id: string | number;
-  role: string;
-  content: string;
-  createdAt: string | Date;
-  hidden?: boolean;
-  audioUrl?: string;
-}
+const props = defineProps({
+  messages: {
+    type: Array as PropType<Message[]>,
+    required: true
+  },
+  characterId: {
+    type: String,
+    required: true,
+  }
+});
 
-const props = defineProps<{
-  messages: Message[];
-  maxHeight?: number;
-}>();
+const isPlaying = ref<string | null>(null);
+const audio = new Audio();
 
-const { synthesizeSpeech } = useSpeech();
-const isSpeaking = ref(false);
-const currentSpeakingId = ref<string | number | null>(null);
-const currentAudio = ref<HTMLAudioElement | null>(null);
-
-async function speakMessage(text: string) {
-  if (isSpeaking.value) {
-    stopSpeaking();
+const synthesizeAndPlay = async (message: Message) => {
+  if (isPlaying.value === message.id) {
+    audio.pause();
+    audio.currentTime = 0;
+    isPlaying.value = null;
     return;
   }
-  
+
   try {
-    isSpeaking.value = true;
-    
-    // Получаем URL аудиофайла
-    const audioUrl = await synthesizeSpeech(text);
-    
-    // Создаем и воспроизводим аудио
-    const audio = new Audio(audioUrl);
-    currentAudio.value = audio;
-    
-    audio.addEventListener('ended', stopSpeaking);
-    audio.addEventListener('error', stopSpeaking);
-    
-    await audio.play();
-  } catch (error: any) {
-    addMessage({
-        summary: 'Ошибка воспроизведения речи',
-        detail: 'Повторите попытку позже',
-        severity: 'error'
-    })
-    console.error('Ошибка воспроизведения речи:', error);
-    stopSpeaking();
+    isPlaying.value = message.id;
+    const response = await axiosInstance.post('/api/voice/synthesize', {
+      text: message.content,
+      characterId: props.characterId
+    }, {
+      responseType: 'blob'
+    });
+
+    const audioUrl = URL.createObjectURL(response.data);
+    audio.src = audioUrl;
+    audio.play();
+
+    audio.onended = () => {
+      isPlaying.value = null;
+      URL.revokeObjectURL(audioUrl);
+    };
+
+  } catch (error) {
+    console.error('Ошибка синтеза речи:', error);
+    isPlaying.value = null;
   }
-}
+};
 
-function stopSpeaking() {
-  if (currentAudio.value) {
-    currentAudio.value.pause();
-    currentAudio.value.removeEventListener('ended', stopSpeaking);
-    currentAudio.value.removeEventListener('error', stopSpeaking);
-    currentAudio.value = null;
-  }
-  isSpeaking.value = false;
-  currentSpeakingId.value = null;
-}
-
-function formatDate(date: string | Date): string {
-  const isToday = new Date().toLocaleDateString('ru-RU') === new Date(date).toLocaleDateString('ru-RU');
-  const dateObj = typeof date === 'string' ? new Date(date) : date;
-  return isToday ? dateObj.toLocaleTimeString('ru-RU', {
-    hour: '2-digit',
-    minute: '2-digit'
-  }) : dateObj.toLocaleDateString('ru-RU', {
-    day: '2-digit',
-    month: '2-digit',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  });
-}
-
-const scrollToBottom = () => {
-  const messagesContainer = document.querySelector('.messages-container')
-  if (messagesContainer) {
-    messagesContainer.scrollTop = messagesContainer.scrollHeight
-  }
-}
-
-defineExpose({
-  scrollToBottom
-})
+const messageClass = (message: Message) => {
+  return message.role === 'user' ? 'message-user' : 'message-model';
+};
 </script>
 
 <style scoped>
@@ -178,6 +119,7 @@ defineExpose({
   word-break: break-word;
   color: #000;
   position: relative;
+  padding-right: 2.5rem; /* Space for the button */
 }
 
 .speech-button {
@@ -199,5 +141,12 @@ defineExpose({
   text-align: center;
   color: #666;
   padding: 20px;
+}
+
+.play-button {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
 }
 </style>
