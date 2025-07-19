@@ -1,38 +1,81 @@
 <template>
-  <div class="messages-container">
-    <div v-for="message in messages" :key="message.id" :class="['message', messageClass(message)]">
-      <div class="message-content">
-        <Markdown :source="message.content" />
+  <div 
+    class="messages-container"
+    :style="{ maxHeight: maxHeight ? `${maxHeight}px` : 'auto' }"
+  >
+    <div
+        v-for="message in messages"
+        :key="message.id"
+        class="message"
+        :class="message.role"
+    >
+      <div class="message-header">
+        <span class="role">{{ message.role === 'user' ? 'Вы' : 'AI' }}
+          <template v-if="message.hidden">--hidden--</template>
+        </span>
+
+        <div class="spacer" />
         <Button 
           v-if="message.role === 'model'" 
           :icon="isPlaying === message.id ? 'pi pi-stop-circle' : 'pi pi-play-circle'" 
           class="p-button-rounded p-button-text play-button"
-          @click="synthesizeAndPlay(message)"
           v-tooltip.top="'Озвучить сообщение'"
+          @click="synthesizeAndPlay(message)"
         />
+        <span class="created-at">{{ formatDate(message.createdAt) }}</span>
+        
       </div>
+      <div class="message-content">
+        {{ message.content || '-' }}
+      </div>
+    </div>
+    <div v-if="messages.length === 0" class="no-messages">
+      Нет сообщений
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
-import type { PropType } from 'vue';
-import type { Message } from '../../../types/chat';
-import Markdown from 'vue-markdown-it';
+import { ref } from 'vue';
 import Button from 'primevue/button';
-import { axiosInstance } from '../../../plugins/axios';
+import { axiosInstance } from '../../plugins/axios.js';
 
-const props = defineProps({
-  messages: {
-    type: Array as PropType<Message[]>,
-    required: true
-  },
-  characterId: {
-    type: String,
-    required: true,
+interface Message {
+  id: string | number;
+  role: string;
+  content: string;
+  createdAt: string | Date;
+  hidden?: boolean;
+  audioUrl?: string;
+}
+
+const props = defineProps<{
+  messages: Message[];
+  maxHeight?: number;
+  characterId: string;
+}>();
+
+function formatDate(date: string | Date): string {
+  const isToday = new Date().toLocaleDateString('ru-RU') === new Date(date).toLocaleDateString('ru-RU');
+  const dateObj = typeof date === 'string' ? new Date(date) : date;
+  return isToday ? dateObj.toLocaleTimeString('ru-RU', {
+    hour: '2-digit',
+    minute: '2-digit'
+  }) : dateObj.toLocaleDateString('ru-RU', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit'
+  });
+}
+
+const scrollToBottom = () => {
+  const messagesContainer = document.querySelector('.messages-container')
+  if (messagesContainer) {
+    messagesContainer.scrollTop = messagesContainer.scrollHeight
   }
-});
+}
 
 const isPlaying = ref<string | null>(null);
 const audio = new Audio();
@@ -46,7 +89,7 @@ const synthesizeAndPlay = async (message: Message) => {
   }
 
   try {
-    isPlaying.value = message.id;
+    isPlaying.value = message.id as string;
     const response = await axiosInstance.post('/api/voice/synthesize', {
       text: message.content,
       characterId: props.characterId
@@ -69,9 +112,9 @@ const synthesizeAndPlay = async (message: Message) => {
   }
 };
 
-const messageClass = (message: Message) => {
-  return message.role === 'user' ? 'message-user' : 'message-model';
-};
+defineExpose({
+  scrollToBottom
+})
 </script>
 
 <style scoped>
@@ -119,7 +162,6 @@ const messageClass = (message: Message) => {
   word-break: break-word;
   color: #000;
   position: relative;
-  padding-right: 2.5rem; /* Space for the button */
 }
 
 .speech-button {
@@ -141,12 +183,5 @@ const messageClass = (message: Message) => {
   text-align: center;
   color: #666;
   padding: 20px;
-}
-
-.play-button {
-  position: absolute;
-  top: 50%;
-  right: 0;
-  transform: translateY(-50%);
 }
 </style>
