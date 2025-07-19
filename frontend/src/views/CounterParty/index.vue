@@ -14,7 +14,6 @@ import { currentApartment, chat } from '../../__data__/store';
 import ApartamentCard from '../../components/ApartamentCard.vue';
 import CounterPartyCard from '../../components/CounterPartyCard.vue';
 import { currentScenario, currentGroup, currentCounterparty } from '../../__data__/store';
-import { getScenarioInfo } from '../../utils/scenario';
 import { useScenarios } from '../../composables/useScenarios';
 import ScenarioCard from '../../components/ScenarioCard.vue';
 import Chat from '../../components/Chat/index.vue';
@@ -61,6 +60,7 @@ const counterpartyId = computed(() => route.params.id as string);
 // Функция получения данных о контрагенте
 const loadCounterparty = async () => {
     const result = await getCounterparty(counterpartyId.value);
+    console.log({result});
     if (!result) {
         router.push('/');
     }
@@ -193,6 +193,10 @@ watch(() => route.query.chatId, () => {
 }, {
     flush: 'pre'
 })
+
+watch(currentCounterparty, () => {
+    console.log('currentCounterparty', currentCounterparty.value);
+})
 </script>
 
 <template>
@@ -217,7 +221,7 @@ watch(() => route.query.chatId, () => {
             </template>
             <div class="spacer"></div>
             <Button 
-                v-if="step === 'counterparty'"
+                v-if="step === 'counterparty' && currentCounterparty"
                 label="Начать чат" 
                 icon="pi pi-comments"
                 :loading="isCreateChatLoading"

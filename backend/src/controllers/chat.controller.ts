@@ -287,7 +287,8 @@ export const chatController = {
 
       // 3. Send initial prompt to RAG to get the first message
       const initialPrompt = INITIAL_DIALOG_PROMPT({
-        scenario: `${scenario?.aiPrompt} ${JSON.stringify(scenario?.scenarioMeta) ?? ''}`,
+        scenario: `${scenario?.aiPrompt}`,
+        apartment: apartment?.description || '',
       });
       
       const ragResponse = await aiService.communicateWithRag(ragSessionId, initialPrompt);

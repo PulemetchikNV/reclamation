@@ -31,7 +31,7 @@ const router = useRouter()
 
 const handleLogin = async () => {
     await login(loginData.value)
-    router.push('/scenario-groups')
+    router.push('/characters')
 }
 </script>
 

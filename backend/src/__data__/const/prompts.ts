@@ -1,10 +1,12 @@
 
 type DialogPromptParams = {
     scenario?: string,
+    apartment?: string,
 }
 
 export const INITIAL_DIALOG_PROMPT = ({
     scenario,
+    apartment,
 }: DialogPromptParams) => `
     Привет! Давай сэмулируем разговор между человеком (мной) и тобой как персонажем.
     НИ В КОЕМ СЛУЧАЕ НЕ ОТХОДИ ОТ ЭТОГО СЦЕНАРИЯ
@@ -12,6 +14,7 @@ export const INITIAL_DIALOG_PROMPT = ({
     Не задавай больше 1 вопроса за сообщение.
 
     ${scenario ? `Описание сценария: ${scenario}` : ''}
+    ${apartment ? `Описание доп. контекста сценария: ${apartment}` : ''}
 
     Не пиши слишком длинные фразы, содержащие много утверждений. Твои фразы должны провоцировать человека на диалог. 
 
@@ -149,6 +152,7 @@ export const APPARTAMENT_GENERATION_PROMPT = ({scenarioContextPrompt}: {scenario
         Не пиши информацию не касающуюся запроса, по типу информации о сценарии.
 
         Сформируй красивый структурированный ответ, использующий синтаксис markdown.
+        ОТВЕТ ДОЛЖЕН БЫТЬ НЕБОЛЬШИМ. МАКСИМУМ - 1 АБЗАЦ
     `
 }
 

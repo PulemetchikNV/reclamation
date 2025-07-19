@@ -69,7 +69,7 @@ export const counterpartyController = {
   async updateCounterparty(req: Request, res: Response) {
     try {
       const { id } = req.params;
-      const { name, characterData } = req.body;
+      const { name, characterData, removePhoto, removeContextFile } = req.body;
       const parsedCharacterData = JSON.parse(characterData);
 
       const description = parsedCharacterData?.general?.role || 'Нет описания';
@@ -81,7 +81,6 @@ export const counterpartyController = {
       const contextFile = files?.contextFile?.[0];
       
       const photoPath = characterPhoto ? `/images/characters/${characterPhoto.filename}` : undefined;
-      console.log({photoPath});
       const contextFilePath = contextFile ? `/context_files/${contextFile.filename}` : undefined;
 
       const updateData: any = {
@@ -94,9 +93,14 @@ export const counterpartyController = {
 
       if (photoPath) {
         updateData.photos = [photoPath];
+      } else if (removePhoto === 'true') {
+        updateData.photos = [];
       }
+
       if (contextFilePath) {
         updateData.contextFilePath = contextFilePath;
+      } else if (removeContextFile === 'true') {
+        updateData.contextFilePath = null;
       }
 
       const updatedCounterparty = await counterpartyService.updateCounterparty(id, updateData);

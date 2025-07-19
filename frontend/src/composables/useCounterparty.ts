@@ -2,22 +2,20 @@ import { ref, computed } from 'vue';
 import { axiosInstance as api } from '../plugins/axios';
 import type { Counterparty } from '../types/counterparty';
 import { addMessage } from '../__data__/store';
-import { useRouter } from 'vue-router';
+import { currentCounterparty } from '../__data__/store';
 
 const counterparties = ref<Counterparty[]>([]);
-const currentCounterparty = ref<Counterparty | null>(null);
 
 const isLoading = ref(false);
 const error = ref<string | null>(null);
 
 export function useCounterparty() {
-    const router = useRouter();
-
     const fetchWrapper = async (request: Promise<any>) => {
         isLoading.value = true;
         error.value = null;
         try {
             const response = await request;
+            
             return response.data;
         } catch (err: any) {
             error.value = err.response?.data?.error || err.message || 'Произошла неизвестная ошибка';
@@ -30,10 +28,13 @@ export function useCounterparty() {
 
     const getCounterparties = async () => {
         counterparties.value = await fetchWrapper(api.get('/api/counterparties')) || [];
+        return counterparties.value;
     };
 
     const getCounterparty = async (id: string) => {
         currentCounterparty.value = await fetchWrapper(api.get(`/api/counterparties/${id}`));
+        
+        return currentCounterparty.value;
     };
 
     const createCounterparty = async (formData: FormData) => {

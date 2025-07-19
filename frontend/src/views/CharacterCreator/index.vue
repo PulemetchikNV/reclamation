@@ -134,19 +134,33 @@
             <InputText id="avatar" v-model="form.visual.avatar" fluid />
             <label for="avatar">Аватар / стикерпак</label>
           </IftaLabel>
-           <div class="p-field">
-            <label for="characterPhoto">Фото персонажа</label>
-            <FileUpload 
-                id="characterPhoto" 
-                mode="basic" 
-                name="characterPhoto" 
-                accept="image/*"
-                :maxFileSize="5000000" 
-                chooseLabel="Выбрать фото"
-                :auto="true"
-                @select="onPhotoSelect"
-            />
-          </div>
+            <div class="p-field">
+                <label for="characterPhoto">Фото персонажа</label>
+                <FileUpload 
+                    name="characterPhoto" 
+                    @select="onPhotoSelect" 
+                    :show-upload-button="false" 
+                    :show-cancel-button="false"
+                    accept="image/*" 
+                    :maxFileSize="5000000"
+                >
+                    <template #header="{ chooseCallback, clearCallback, files }">
+                        <div class="file-header">
+                            <Button icon="pi pi-images" label="Выбрать" @click="chooseCallback" />
+                            <Button @click="() => { clearCallback(); removePhoto(); }" icon="pi pi-times" label="Удалить" class="p-button-danger" :disabled="!characterPhoto && !photoUrl" />
+                        </div>
+                    </template>
+                    <template #content>
+                        <div v-if="photoUrl || characterPhoto" class="preview-container">
+                            <img :src="photoPreviewUrl" alt="Превью" class="image-preview" />
+                        </div>
+                        <div v-else class="empty-content">
+                            <i class="pi pi-upload" />
+                            <p>Перетащите изображение сюда для загрузки.</p>
+                        </div>
+                    </template>
+                </FileUpload>
+            </div>
         </div>
       </TabPanel>
       <TabPanel header="6. Технические параметры" :value="5">
@@ -207,19 +221,34 @@
             <Textarea id="references" v-model="form.additional.references" rows="3" fluid />
             <label for="references">Аналоги и референсы</label>
           </IftaLabel>
-          <div class="p-field">
-            <label for="contextFile">Файл контекста (txt)</label>
-            <FileUpload 
-                id="contextFile" 
-                mode="basic" 
-                name="contextFile" 
-                accept=".txt"
-                :maxFileSize="5000000" 
-                @select="onFileSelect"
-                chooseLabel="Выбрать файл"
-                :auto="true"
-            />
-          </div>
+            <div class="p-field">
+                <label for="contextFile">Файл контекста (txt)</label>
+                 <FileUpload 
+                    name="contextFile"
+                    @select="onFileSelect" 
+                    :show-upload-button="false" 
+                    :show-cancel-button="false"
+                    accept=".txt" 
+                    :maxFileSize="5000000"
+                >
+                    <template #header="{ chooseCallback, clearCallback, files }">
+                        <div class="file-header">
+                            <Button @click="chooseCallback" icon="pi pi-file" label="Выбрать" />
+                            <Button @click="() => { clearCallback(); removeContextFile(); }" icon="pi pi-times" label="Удалить" class="p-button-danger" :disabled="!contextFile && !contextFileUrl" />
+                        </div>
+                    </template>
+                    <template #content>
+                        <div v-if="contextFileUrl || contextFile" class="preview-container file-preview">
+                            <i class="pi pi-file-export" style="font-size: 2rem;"></i>
+                            <span>{{ contextFile?.name || getFileNameFromUrl(contextFileUrl) }}</span>
+                        </div>
+                        <div v-else class="empty-content">
+                            <i class="pi pi-upload" />
+                            <p>Перетащите .txt файл сюда для загрузки.</p>
+                        </div>
+                    </template>
+                </FileUpload>
+            </div>
         </div>
       </TabPanel>
     </TabView>
@@ -227,7 +256,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, inject } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCounterparty } from '../../composables/useCounterparty';
 import TabView from 'primevue/tabview';
@@ -237,6 +266,8 @@ import Textarea from 'primevue/textarea';
 import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload';
+import { API_URL_KEY } from '../../__data__/injectKeys';
+import { getStaticUrl } from '../../utils';
 
 const props = defineProps({
   id: {
@@ -267,10 +298,28 @@ const form = ref({
 
 const contextFile = ref<File | null>(null);
 const characterPhoto = ref<File | null>(null);
+const photoUrl = ref<string | null>(null);
+const contextFileUrl = ref<string | null>(null);
+
+const removePhotoFlag = ref(false);
+const removeContextFileFlag = ref(false);
+
+const apiUrl = inject(API_URL_KEY);
+const staticUrl = getStaticUrl(apiUrl as string);
 
 const isEditMode = computed(() => !!props.id);
 const pageTitle = computed(() => isEditMode.value ? 'Редактирование персонажа' : 'Создание персонажа');
 const saveButtonLabel = computed(() => isEditMode.value ? 'Обновить' : 'Сохранить');
+
+const photoPreviewUrl = computed(() => {
+    if (characterPhoto.value) {
+        return URL.createObjectURL(characterPhoto.value);
+    }
+    if (photoUrl.value) {
+        return `${staticUrl}${photoUrl.value}`;
+    }
+    return '';
+});
 
 watch(currentCounterparty, (newVal) => {
   if (newVal && isEditMode.value) {
@@ -289,6 +338,8 @@ watch(currentCounterparty, (newVal) => {
      if (newVal.name) {
       form.value.general.name = newVal.name;
     }
+    photoUrl.value = newVal.photos?.[0] || null;
+    contextFileUrl.value = newVal.contextFilePath || null;
   }
 });
 
@@ -302,13 +353,34 @@ onMounted(() => {
 const onFileSelect = (event: FileUploadSelectEvent) => {
   if (event.files && event.files.length > 0) {
     contextFile.value = event.files[0];
+    contextFileUrl.value = null; 
+    removeContextFileFlag.value = false;
   }
 };
 
 const onPhotoSelect = (event: FileUploadSelectEvent) => {
   if (event.files && event.files.length > 0) {
     characterPhoto.value = event.files[0];
+    photoUrl.value = null;
+    removePhotoFlag.value = false;
   }
+};
+
+const removePhoto = () => {
+    characterPhoto.value = null;
+    photoUrl.value = null;
+    removePhotoFlag.value = true;
+};
+
+const removeContextFile = () => {
+    contextFile.value = null;
+    contextFileUrl.value = null;
+    removeContextFileFlag.value = true;
+};
+
+const getFileNameFromUrl = (url: string | null) => {
+    if (!url) return '';
+    return url.split('/').pop() || '';
 };
 
 const pasteFromClipboard = async () => {
@@ -427,11 +499,16 @@ const saveCharacter = async () => {
     additional: form.value.additional,
   }));
   
-  if (contextFile.value) {
-    formData.append('contextFile', contextFile.value);
-  }
   if (characterPhoto.value) {
     formData.append('characterPhoto', characterPhoto.value);
+  } else if (removePhotoFlag.value) {
+    formData.append('removePhoto', 'true');
+  }
+
+  if (contextFile.value) {
+    formData.append('contextFile', contextFile.value);
+  } else if (removeContextFileFlag.value) {
+    formData.append('removeContextFile', 'true');
   }
 
   let success = false;
@@ -481,5 +558,42 @@ const saveCharacter = async () => {
   flex-direction: column;
   gap: 1.5rem;
   padding-top: 1rem;
+}
+.file-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    width: 100%;
+}
+.preview-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+    border: 2px dashed #ccc;
+    border-radius: 8px;
+    margin-top: 1rem;
+}
+.image-preview {
+    max-width: 100%;
+    max-height: 200px;
+    border-radius: 8px;
+}
+.file-preview {
+    gap: 1rem;
+    color: #6c757d;
+}
+.empty-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+    color: #6c757d;
+}
+.empty-content i {
+    font-size: 2rem;
+    margin-bottom: 1rem;
 }
 </style> 
