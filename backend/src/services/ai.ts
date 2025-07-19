@@ -246,7 +246,7 @@ export const aiService = {
                 publicDir = path.join(__dirname, '../public/audio/generated');
             } else {
                 // В разработке используем путь от корня проекта
-                publicDir = path.join(process.cwd(), 'src/public/audio/generated');
+                publicDir = path.join(process.cwd(), 'backend/src/public/audio/generated');
             }
             
             // Создаем директорию, если она не существует
