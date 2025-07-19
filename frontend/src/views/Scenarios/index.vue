@@ -116,9 +116,9 @@ onMounted(async () => {
         <h1 class="page-title">{{ currentGroup?.title || 'Сценарии' }}</h1>
         <Button 
           label="Поменять персонажа" 
-          @click="openCharacterDialog" 
           link 
           class="change-character-button"
+          @click="openCharacterDialog" 
         />
       </div>
     </div>
@@ -229,6 +229,7 @@ onMounted(async () => {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  gap: 0.5rem;
 }
 
 .back-button {
