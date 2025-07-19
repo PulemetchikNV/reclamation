@@ -23,11 +23,10 @@ dist-ssr
 *.sln
 *.sw?
 
-.vscode
-.env
+context_files/*
+uploads/*
 
-node_modules
-dist
+.vscode
 
 myvenv
 new_venv
