@@ -74,6 +74,8 @@ export const voiceService = {
    * @returns Аудиоданные в виде Buffer.
    */
   async textToSpeech(text: string, voiceId: string): Promise<Buffer | null> {
+    console.log('textToSpeech', text, voiceId);
+    
     try {
       const response = await minimaxApi.post(`/t2a_v2?GroupId=${MINIMAX_GROUP_ID}`, {
         model: "speech-02-hd",
@@ -95,13 +97,28 @@ export const voiceService = {
         responseType: 'arraybuffer'
       }); // Получаем ответ как бинарные данные
 
+      const contentType = response.headers['content-type'];
+      if (contentType && contentType.includes('application/json')) {
+        const errorResponse = JSON.parse(Buffer.from(response.data).toString('utf8'));
+        console.error('Ошибка от Minimax API (status 200):', errorResponse);
+        return null;
+      }
+
       if (response.data) {
         // Поскольку мы получаем arraybuffer, данные будут напрямую в response.data
         return Buffer.from(response.data);
       }
       return null;
-    } catch (error) {
-      console.error('Критическая ошибка при синтезе речи:', error);
+    } catch (error: any) {
+      console.error('Критическая ошибка при синтезе речи (axios error)');
+      if (error.response && error.response.data) {
+        try {
+          const errorText = Buffer.from(error.response.data).toString('utf8');
+          console.error('Тело ошибки от Minimax API:', errorText);
+        } catch (e) {
+          console.error('Не удалось раскодировать тело ошибки от Minimax API');
+        }
+      }
       return null;
     }
   }

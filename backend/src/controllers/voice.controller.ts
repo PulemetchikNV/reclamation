@@ -6,6 +6,7 @@ export const voiceController = {
   async synthesizeSpeech(req: Request, res: Response) {
     try {
       const { text, characterId } = req.body;
+      console.log('synthesizeSpeech', {text, characterId});
 
       if (!text || !characterId) {
         return res.status(400).json({ error: 'Необходимы text и characterId' });
@@ -17,6 +18,7 @@ export const voiceController = {
       }
 
       const audioBuffer = await voiceService.textToSpeech(text, character.minimaxVoiceId);
+      console.log('AUDIO BUFFER', audioBuffer);
 
       if (audioBuffer) {
         res.setHeader('Content-Type', 'audio/mpeg');

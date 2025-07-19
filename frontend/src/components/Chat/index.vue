@@ -80,6 +80,7 @@ defineExpose({
                         <Messages
                             :maxHeight="500"
                             :messages="chat?.messages || []"
+                            :characterId="chat?.counterpartyId"
                             ref="messagesRef"
                             class="messages"
                         />

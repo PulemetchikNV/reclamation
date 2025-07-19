@@ -36,7 +36,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted } from 'vue';
 import Button from 'primevue/button';
 import { axiosInstance } from '../../plugins/axios.js';
 
@@ -88,8 +88,11 @@ const synthesizeAndPlay = async (message: Message) => {
     return;
   }
 
+  isPlaying.value = message.id as string;
+
   try {
-    isPlaying.value = message.id as string;
+    console.log('text', message.content, 'characterId', props.characterId);
+    
     const response = await axiosInstance.post('/api/voice/synthesize', {
       text: message.content,
       characterId: props.characterId
@@ -97,7 +100,17 @@ const synthesizeAndPlay = async (message: Message) => {
       responseType: 'blob'
     });
 
+    if (response.data.type !== 'audio/mpeg') {
+      const errorText = await response.data.text();
+      console.error('API вернуло не аудио, а ошибку:', errorText);
+      isPlaying.value = null;
+      // Здесь можно добавить уведомление для пользователя
+      return;
+    }
+
     const audioUrl = URL.createObjectURL(response.data);
+    console.log('audioUrl', audioUrl);
+    
     audio.src = audioUrl;
     audio.play();
 
@@ -106,11 +119,20 @@ const synthesizeAndPlay = async (message: Message) => {
       URL.revokeObjectURL(audioUrl);
     };
 
+    audio.onerror = (error: any) => {
+      console.error('Ошибка воспроизведения речи:', error);
+      isPlaying.value = null;
+      URL.revokeObjectURL(audioUrl);
+    };
   } catch (error) {
-    console.error('Ошибка синтеза речи:', error);
+    console.error('Не удалось выполнить запрос на синтез речи:', error);
     isPlaying.value = null;
   }
 };
+
+onMounted(() => {
+  // ... existing code ...
+})
 
 defineExpose({
   scrollToBottom
