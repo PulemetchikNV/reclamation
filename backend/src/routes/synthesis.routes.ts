@@ -72,3 +72,6 @@ router.get('/download/:filename', (req, res) => {
 });
 
 export default router; 
+
+// http://localhost:3000/static/images/characters/characterPhoto-1752894357887-448834309.jpg
+// http://localhost:3000/static/images/characters/characterPhoto-1752894918863-204502111.jpg

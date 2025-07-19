@@ -1,70 +1,84 @@
-import { ref } from 'vue';
-import type { Counterparty } from '../types/counterparty';
+import { ref, computed } from 'vue';
 import { axiosInstance as api } from '../plugins/axios';
-import { convertRequestStateToRefs, getRequestState } from '../utils/requests';
-import { getRequest } from '../utils/requests';
-import { currentCounterparty } from '../__data__/store';
+import type { Counterparty } from '../types/counterparty';
+import { addMessage } from '../__data__/store';
+import { useRouter } from 'vue-router';
+
+const counterparties = ref<Counterparty[]>([]);
+const currentCounterparty = ref<Counterparty | null>(null);
+
+const isLoading = ref(false);
+const error = ref<string | null>(null);
 
 export function useCounterparty() {
-  const counterparties = ref<Counterparty[]>([]);
-  const isCounterpartiesLoading = ref(false);
-  const isCounterpartiesError = ref<string | null>(null);
+    const router = useRouter();
 
-
-  const getCounterpartyState = ref(getRequestState())
-
-  const isCreating = ref(false);
-  const createError = ref<string | null>(null);
+    const fetchWrapper = async (request: Promise<any>) => {
+        isLoading.value = true;
+        error.value = null;
+        try {
+            const response = await request;
+            return response.data;
+        } catch (err: any) {
+            error.value = err.response?.data?.error || err.message || 'Произошла неизвестная ошибка';
+            addMessage({ severity: 'error', summary: 'Ошибка', detail: error.value, life: 5000 });
+            return null;
+        } finally {
+            isLoading.value = false;
+        }
+    };
 
     const getCounterparties = async () => {
-    isCounterpartiesLoading.value = true;
-    isCounterpartiesError.value = null;
-    try {
-      const response = await api.get<Counterparty[]>('/api/counterparties');
-      counterparties.value = response.data;
-    } catch (err) {
-      isCounterpartiesError.value = 'Не удалось загрузить персонажей';
-    } finally {
-      isCounterpartiesLoading.value = false;
-    }
-  };
+        counterparties.value = await fetchWrapper(api.get('/api/counterparties')) || [];
+    };
 
     const getCounterparty = async (id: string) => {
-        return await getRequest<Counterparty>(async () => {
-      const response = await api.get<Counterparty>(`/api/counterparties/${id}`);
-      currentCounterparty.value = response.data
-      return response.data;
-    }, getCounterpartyState.value)
+        currentCounterparty.value = await fetchWrapper(api.get(`/api/counterparties/${id}`));
     };
 
-  const createCounterparty = async (data: FormData): Promise<boolean> => {
-    isCreating.value = true;
-    createError.value = null;
-    try {
-      await api.post('/api/counterparties', data, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
+    const createCounterparty = async (formData: FormData) => {
+        const data = await fetchWrapper(api.post('/api/counterparties', formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }));
+        if (data) {
+            addMessage({ severity: 'success', summary: 'Успех', detail: 'Персонаж успешно создан!', life: 3000 });
+            await getCounterparties();
+            return true;
         }
-      });
-      await getCounterparties(); // Refresh the list
-      return true;
-    } catch (err) {
-      createError.value = 'Не удалось создать персонажа';
-      return false;
-    } finally {
-      isCreating.value = false;
-    }
+        return false;
     };
+
+    const updateCounterparty = async (id: string, formData: FormData) => {
+        const data = await fetchWrapper(api.put(`/api/counterparties/${id}`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' }
+        }));
+        if (data) {
+            addMessage({ severity: 'success', summary: 'Успех', detail: 'Персонаж успешно обновлен!', life: 3000 });
+            await getCounterparties();
+            return true;
+        }
+        return false;
+    };
+
+    const deleteCounterparty = async (id: string) => {
+        const response = await fetchWrapper(api.delete(`/api/counterparties/${id}`));
+        // axios.delete возвращает данные в `data`, но при 204 их нет
+        if (response === null || response === '') { 
+            return true;
+        }
+        return false;
+    };
+
 
     return {
         counterparties,
-    isCounterpartiesLoading,
-    isCounterpartiesError,
+        currentCounterparty,
+        isCounterpartiesLoading: isLoading,
+        isCounterpartiesError: error,
         getCounterparties,
-    isCreating,
-    createError,
-    createCounterparty,
         getCounterparty,
-        ...convertRequestStateToRefs(getCounterpartyState.value, 'counterparty'),
+        createCounterparty,
+        updateCounterparty,
+        deleteCounterparty,
     };
 } 

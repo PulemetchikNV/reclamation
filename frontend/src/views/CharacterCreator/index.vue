@@ -1,7 +1,7 @@
 <template>
   <div class="character-creator">
     <div class="header">
-      <h1 class="title">Конструктор персонажей</h1>
+      <h1 class="title">{{ pageTitle }}</h1>
       <div class="actions">
         <Button icon="pi pi-clipboard" @click="pasteFromClipboard" severity="secondary" />
         <Button label="Сохранить" icon="pi pi-check" @click="saveCharacter" />
@@ -134,6 +134,19 @@
             <InputText id="avatar" v-model="form.visual.avatar" fluid />
             <label for="avatar">Аватар / стикерпак</label>
           </IftaLabel>
+           <div class="p-field">
+            <label for="characterPhoto">Фото персонажа</label>
+            <FileUpload 
+                id="characterPhoto" 
+                mode="basic" 
+                name="characterPhoto" 
+                accept="image/*"
+                :maxFileSize="5000000" 
+                chooseLabel="Выбрать фото"
+                :auto="true"
+                @select="onPhotoSelect"
+            />
+          </div>
         </div>
       </TabPanel>
       <TabPanel header="6. Технические параметры" :value="5">
@@ -214,7 +227,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue';
+import { ref, onMounted, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useCounterparty } from '../../composables/useCounterparty';
 import TabView from 'primevue/tabview';
@@ -225,8 +238,21 @@ import Button from 'primevue/button';
 import IftaLabel from 'primevue/iftalabel';
 import FileUpload, { type FileUploadSelectEvent } from 'primevue/fileupload';
 
+const props = defineProps({
+  id: {
+    type: String,
+    default: null
+  }
+});
+
 const router = useRouter();
-const { createCounterparty, isCreating } = useCounterparty();
+const { 
+  createCounterparty, 
+  updateCounterparty, 
+  getCounterparty, 
+  currentCounterparty,
+  isCounterpartiesLoading 
+} = useCounterparty();
 
 const form = ref({
   general: { name: '', role: '', format: '', audience: '', language: '' },
@@ -240,10 +266,48 @@ const form = ref({
 });
 
 const contextFile = ref<File | null>(null);
+const characterPhoto = ref<File | null>(null);
+
+const isEditMode = computed(() => !!props.id);
+const pageTitle = computed(() => isEditMode.value ? 'Редактирование персонажа' : 'Создание персонажа');
+const saveButtonLabel = computed(() => isEditMode.value ? 'Обновить' : 'Сохранить');
+
+watch(currentCounterparty, (newVal) => {
+  if (newVal && isEditMode.value) {
+    // Глубокое копирование, чтобы избежать прямого изменения store
+    const data = JSON.parse(JSON.stringify(newVal.characterData));
+    form.value = {
+        general: data.general || form.value.general,
+        behavior: data.behavior || form.value.behavior,
+        style: data.style || form.value.style,
+        scenarios: data.scenarios || form.value.scenarios,
+        visual: data.visual || form.value.visual,
+        technical: data.technical || form.value.technical,
+        restrictions: data.restrictions || form.value.restrictions,
+        additional: data.additional || form.value.additional,
+    };
+     if (newVal.name) {
+      form.value.general.name = newVal.name;
+    }
+  }
+});
+
+onMounted(() => {
+  if (isEditMode.value) {
+    getCounterparty(props.id);
+  }
+});
+
 
 const onFileSelect = (event: FileUploadSelectEvent) => {
   if (event.files && event.files.length > 0) {
     contextFile.value = event.files[0];
+  }
+};
+
+const onPhotoSelect = (event: FileUploadSelectEvent) => {
+  if (event.files && event.files.length > 0) {
+    characterPhoto.value = event.files[0];
   }
 };
 
@@ -366,8 +430,17 @@ const saveCharacter = async () => {
   if (contextFile.value) {
     formData.append('contextFile', contextFile.value);
   }
+  if (characterPhoto.value) {
+    formData.append('characterPhoto', characterPhoto.value);
+  }
 
-  const success = await createCounterparty(formData);
+  let success = false;
+  if (isEditMode.value) {
+    success = await updateCounterparty(props.id, formData);
+  } else {
+    success = await createCounterparty(formData);
+  }
+
   if (success) {
     router.push('/characters');
   }

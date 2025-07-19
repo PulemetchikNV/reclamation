@@ -15,11 +15,15 @@
         v-for="character in characters"
         :key="character.id"
         :counterparty="character"
-        :can-change-difficulty="false"
-        class="clickable"
-        @click="navigateToCharacter(character.id)"
-      />
+        @click="navigateToCharacterScenarios(character.id)"
+      >
+        <template #actions>
+          <Button icon="pi pi-pencil" class="p-button-rounded p-button-text" @click.stop="navigateToEditor(character.id)" />
+          <Button icon="pi pi-trash" class="p-button-rounded p-button-text p-button-danger" @click.stop="confirmDelete(character.id)" />
+        </template>
+      </CounterPartyCard>
     </div>
+     <ConfirmDialog></ConfirmDialog>
   </div>
 </template>
 
@@ -30,16 +34,50 @@ import CounterPartyCard from '../../components/CounterPartyCard.vue';
 import ProgressSpinner from 'primevue/progressspinner';
 import Button from 'primevue/button';
 import { useRouter } from 'vue-router';
+import { useConfirm } from "primevue/useconfirm";
+import ConfirmDialog from 'primevue/confirmdialog';
+import { addMessage } from '../../__data__/store';
 
-const { counterparties: characters, isCounterpartiesLoading, isCounterpartiesError, getCounterparties } = useCounterparty();
+
+const { 
+  counterparties: characters, 
+  isCounterpartiesLoading, 
+  isCounterpartiesError, 
+  getCounterparties,
+  deleteCounterparty
+} = useCounterparty();
+
 const router = useRouter();
+const confirm = useConfirm();
 
 const navigateToCreator = () => {
   router.push('/character-creator');
 };
 
-const navigateToCharacter = (id: string) => {
+const navigateToEditor = (id: string) => {
+  router.push(`/character-creator/${id}`);
+};
+
+const navigateToCharacterScenarios = (id: string) => {
   router.push(`/scenario-groups?characterId=${id}`);
+};
+
+const confirmDelete = (id: string) => {
+    confirm.require({
+        message: 'Вы уверены, что хотите удалить этого персонажа? Это действие необратимо.',
+        header: 'Подтверждение удаления',
+        icon: 'pi pi-exclamation-triangle',
+        acceptLabel: 'Удалить',
+        rejectLabel: 'Отмена',
+        acceptClass: 'p-button-danger',
+        accept: async () => {
+            const success = await deleteCounterparty(id);
+            if (success) {
+              addMessage({ severity: 'success', summary: 'Успешно', detail: 'Персонаж удален', life: 3000 });
+              await getCounterparties(); // Обновляем список
+            }
+        },
+    });
 };
 
 onMounted(getCounterparties);
@@ -69,19 +107,13 @@ onMounted(getCounterparties);
 }
 .grid {
   display: grid;
-  grid-template-columns: repeat(1, minmax(0, 1fr));
-  gap: 1rem;
+  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 1.5rem;
 }
 
 @media (min-width: 768px) {
   .grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
-@media (min-width: 1024px) {
-  .grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
   }
 }
 </style> 

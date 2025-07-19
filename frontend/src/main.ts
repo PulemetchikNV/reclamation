@@ -7,7 +7,7 @@ import theme from './plugins/primevue/theme.ts'
 import PrimeVue from 'primevue/config'
 import router from './router/index.ts'
 import VueApexCharts from 'vue3-apexcharts'
-import { ToastService, Tooltip } from 'primevue'
+import { ToastService, ConfirmationService, Tooltip } from 'primevue'
 
 const app = createApp(App)
 
@@ -16,4 +16,5 @@ app.use(router)
 app.component('apexchart', VueApexCharts)
 app.use(ToastService)
 app.directive('tooltip', Tooltip)
+app.use(ConfirmationService)
 app.mount('#app')

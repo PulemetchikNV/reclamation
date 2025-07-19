@@ -1,10 +1,10 @@
 import { Request, Response } from 'express';
-import { counterpartyService } from '../services/counterparty';
+import { counterpartyService } from '../services/counterparty.js';
 import { aiService } from '../services/ai';
 import { GEN_COUNTERPARTY_PHOTO_PROMPT_BUYER, GEN_COUNTERPARTY_PHOTO_PROMPT_SELLER, GEN_COUNTERPARTY_PROMPT } from 'src/__data__/const/prompts';
 import { removeJsonBraces } from 'src/utils';
 import { getRandomCounterparty } from 'src/__data__/const/counterparties';
-import { Prisma } from '../generated/prisma';
+import { Prisma } from '../generated/prisma/index.js';
 
 export const counterpartyController = {
   // Получение всех контрагентов
@@ -27,14 +27,20 @@ export const counterpartyController = {
       const character = parsedCharacterData?.behavior?.personalityType || 'Не указан';
       const goal = parsedCharacterData?.behavior?.attitude || 'Не указана';
 
-      const contextFilePath = req.file ? `/static/context_files/${req.file.filename}` : undefined;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const characterPhoto = files?.characterPhoto?.[0];
+      const contextFile = files?.contextFile?.[0];
+
+      const photoPath = characterPhoto ? `/images/characters/${characterPhoto.filename}` : undefined;
+      console.log({photoPath});
+      const contextFilePath = contextFile ? `/context_files/${contextFile.filename}` : undefined;
 
       const newCounterparty = await counterpartyService.createCounterparty({
         name,
         character,
         goal,
         description,
-        photos: [], // Placeholder
+        photos: photoPath ? [photoPath] : [],
         characterData: parsedCharacterData,
         contextFilePath
       });
@@ -64,23 +70,37 @@ export const counterpartyController = {
     try {
       const { id } = req.params;
       const { name, characterData } = req.body;
-      const parsedCharacterData = characterData ? JSON.parse(characterData) : undefined;
+      const parsedCharacterData = JSON.parse(characterData);
+
+      const description = parsedCharacterData?.general?.role || 'Нет описания';
+      const character = parsedCharacterData?.behavior?.personalityType || 'Не указан';
+      const goal = parsedCharacterData?.behavior?.attitude || 'Не указана';
       
-      const updateData: any = {};
-      if (name) updateData.name = name;
-      if (parsedCharacterData) {
-        updateData.characterData = parsedCharacterData;
-        updateData.description = parsedCharacterData?.general?.role;
-        updateData.character = parsedCharacterData?.behavior?.personalityType;
-        updateData.goal = parsedCharacterData?.behavior?.attitude;
+      const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+      const characterPhoto = files?.characterPhoto?.[0];
+      const contextFile = files?.contextFile?.[0];
+      
+      const photoPath = characterPhoto ? `/images/characters/${characterPhoto.filename}` : undefined;
+      console.log({photoPath});
+      const contextFilePath = contextFile ? `/context_files/${contextFile.filename}` : undefined;
+
+      const updateData: any = {
+        name,
+        character,
+        goal,
+        description,
+        characterData: parsedCharacterData,
+      };
+
+      if (photoPath) {
+        updateData.photos = [photoPath];
+      }
+      if (contextFilePath) {
+        updateData.contextFilePath = contextFilePath;
       }
 
-      if (req.file) {
-        updateData.contextFilePath = `/static/context_files/${req.file.filename}`;
-      }
-      
       const updatedCounterparty = await counterpartyService.updateCounterparty(id, updateData);
-      res.json(updatedCounterparty);
+      res.status(200).json(updatedCounterparty);
     } catch (error) {
       console.error('Ошибка при обновлении контрагента:', error);
       res.status(500).json({ error: 'Не удалось обновить контрагента' });
