@@ -1,0 +1,20 @@
+# Используем официальный образ Python
+FROM python:3.11-slim
+
+# Устанавливаем рабочую директорию
+WORKDIR /app
+
+# Копируем файлы с зависимостями
+COPY requirements.txt .
+
+# Устанавливаем зависимости и загружаем NLTK-ресурсы
+# RUN pip install --no-cache-dir -r requirements.txt \
+#     && python -m nltk.downloader punkt
+RUN pip install --no-cache-dir -r requirements.txt \
+    && python -c "import nltk; nltk.download('punkt')"
+
+# Копируем остальные файлы приложения
+COPY . .
+
+# Указываем команду для запуска приложения
+CMD ["python", "rag_server.py"]

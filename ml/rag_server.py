@@ -12,6 +12,7 @@ load_dotenv()
 
 # Импорты для RAG
 import nltk
+from langchain.text_splitter import RecursiveCharacterTextSplitter
 from langchain_community.vectorstores import FAISS
 from langchain_google_genai import GoogleGenerativeAIEmbeddings
 from langchain_community.retrievers import BM25Retriever
@@ -20,12 +21,14 @@ from langchain.docstore.document import Document
 from sentence_transformers.cross_encoder import CrossEncoder
 
 # --- Конфигурация и загрузка моделей ---
-# Автоматическая загрузка необходимых данных для NLTK при первом запуске
+# NLTK больше не требуется для разделения, но может быть полезен для других задач.
+# Оставим проверку на всякий случай, если он понадобится в будущем.
 try:
-    nltk.data.find('tokenizers/punkt')
+    nltk.data.find('tokenizers/punkt/russian.pickle')
+    print("NLTK 'punkt' для русского языка уже загружен.")
 except LookupError:
-    print("Загрузка пакета 'punkt' для NLTK (требуется для разделения на предложения)...")
-    nltk.download('punkt')
+    print("Загрузка пакета 'punkt' для NLTK...")
+    nltk.download('punkt', quiet=True)
     print("Загрузка 'punkt' завершена.")
 
 # --- Конфигурация и загрузка моделей ---
@@ -48,27 +51,24 @@ SESSIONS = {}
 
 # --- УЛУЧШЕНИЕ: Функции для продвинутого RAG ---
 
-def contextual_chunker(text: str, chunk_target_size: int = 1000) -> list[str]:
+def get_text_splitter(chunk_size: int = 1000, chunk_overlap: int = 200) -> RecursiveCharacterTextSplitter:
     """
-    Разделяет текст на предложения, а затем группирует их в чанки,
-    стараясь не превышать целевой размер.
+    Создает и настраивает продвинутый разделитель текста.
     """
-    print("Выполнение умного разделения на чанки...")
-    sentences = nltk.sent_tokenize(text, language="russian")
-    
-    chunks = []
-    current_chunk = ""
-    for sentence in sentences:
-        if len(current_chunk) + len(sentence) <= chunk_target_size:
-            current_chunk += " " + sentence
-        else:
-            chunks.append(current_chunk.strip())
-            current_chunk = sentence
-    if current_chunk:
-        chunks.append(current_chunk.strip())
-    
-    print(f"Текст разделен на {len(chunks)} смысловых чанков.")
-    return chunks
+    return RecursiveCharacterTextSplitter(
+        chunk_size=chunk_size,
+        chunk_overlap=chunk_overlap,
+        length_function=len,
+        is_separator_regex=False,
+        # Основные разделители для сохранения контекста
+        separators=[
+            "\n\n",  # Двойной перенос строки (разделение параграфов)
+            "\n",    # Одиночный перенос строки (новые строки, списки)
+            ". ",    # Конец предложения
+            " ",     # Разделение по словам
+            "",      # Разделение по символам (в крайнем случае)
+        ],
+    )
 
 def generate_via_proxy(prompt: str) -> str:
     """
@@ -150,47 +150,74 @@ def create_character_prompt(character_data, rag_context, user_message):
 # --- РОУТ 1: Настройка персонажа и создание векторной базы ---
 @app.route('/setup_character', methods=['POST'])
 def setup_character():
+    session_id = str(uuid.uuid4())
+    print(f"[{session_id}] Начало обработки запроса /setup_character")
+
     if 'character_json' not in request.form:
+        print(f"[{session_id}] Ошибка: отсутствует 'character_json'.")
         return jsonify({"error": "Отсутствует обязательная часть 'character_json' в form-data."}), 400
     
     json_data_str = request.form['character_json']
 
     try:
         character_data = CharacterModel.model_validate_json(json_data_str)
+        print(f"[{session_id}] JSON персонажа успешно валидирован.")
     except ValidationError as e:
+        print(f"[{session_id}] Ошибка валидации JSON: {e.errors()}")
         return jsonify({"status": "error", "message": "JSON данные невалидны.", "errors": e.errors()}), 400
 
-    session_id = str(uuid.uuid4())
     session_data = {"character_data": character_data}
 
     if 'context_file' in request.files:
         file = request.files['context_file']
-        if file.filename != '':
+        if file and file.filename:
+            print(f"[{session_id}] Найден файл контекста: {file.filename}")
             try:
                 file_content = file.read().decode('utf-8')
                 print(f"Содержимое файла: {file_content}")
                 
-                # 1. Умное разделение на чанки
-                chunks = contextual_chunker(file_content)
-                documents = [Document(page_content=chunk) for chunk in chunks]
+                if not file_content.strip():
+                    print(f"[{session_id}] Предупреждение: Файл контекста пуст. RAG не будет создан.")
+                else:
+                    print(f"[{session_id}] Файл прочитан, {len(file_content)} символов. Начинаю создание RAG.")
+                    # 1. Продвинутое разделение на чанки
+                    text_splitter = get_text_splitter()
+                    documents = text_splitter.create_documents([file_content])
+                    
+                    if not documents:
+                        raise ValueError("Не удалось разделить текст на документы. Возможно, файл пуст или имеет неподдерживаемую структуру.")
+                    
+                    print(f"Текст разделен на {len(documents)} документов (чанков).")
 
-                # 2. Создание гибридного ретривера
-                bm25_retriever = BM25Retriever.from_documents(documents)
-                bm25_retriever.k = 10
+                    # 2. Создание гибридного ретривера
+                    print(f"[{session_id}] Создание BM25 ретривера...")
+                    bm25_retriever = BM25Retriever.from_documents(documents)
+                    bm25_retriever.k = 10
 
-                vector_store = FAISS.from_documents(documents, embeddings)
-                faiss_retriever = vector_store.as_retriever(search_kwargs={"k": 10})
+                    print(f"[{session_id}] Создание FAISS векторного хранилища...")
+                    vector_store = FAISS.from_documents(documents, embeddings)
+                    faiss_retriever = vector_store.as_retriever(search_kwargs={"k": 10})
 
-                session_data["retriever"] = EnsembleRetriever(
-                    retrievers=[bm25_retriever, faiss_retriever],
-                    weights=[0.5, 0.5]
-                )
+                    print(f"[{session_id}] Создание гибридного Ensemble ретривера...")
+                    session_data["retriever"] = EnsembleRetriever(
+                        retrievers=[bm25_retriever, faiss_retriever],
+                        weights=[0.5, 0.5]
+                    )
+                    print(f"[{session_id}] RAG успешно создан.")
                 
+            except UnicodeDecodeError:
+                print(f"[{session_id}] Ошибка декодирования файла. Убедитесь, что файл в кодировке UTF-8.")
+                return jsonify({"error": "Ошибка декодирования файла. Файл должен быть в кодировке UTF-8."}), 400
             except Exception as e:
-                return jsonify({"error": f"Ошибка при обработке файла и создании RAG: {e}"}), 500
+                print(f"[{session_id}] КРИТИЧЕСКАЯ ОШИБКА при обработке файла и создании RAG: {e}")
+                # Возвращаем более подробную ошибку для отладки
+                import traceback
+                return jsonify({"error": f"Ошибка при обработке файла и создании RAG: {str(e)}", "trace": traceback.format_exc()}), 500
+        else:
+            print(f"[{session_id}] Файл 'context_file' был предоставлен, но он пустой или без имени.")
 
     SESSIONS[session_id] = session_data
-    print(f"Персонаж '{character_data.characterData.general.name}' настроен. Session ID: {session_id}")
+    print(f"[{session_id}] Персонаж '{character_data.characterData.general.name}' успешно настроен.")
     return jsonify({"status": "success", "session_id": session_id})
 
 # --- РОУТ 2: Общение с персонажем с использованием RAG ---
