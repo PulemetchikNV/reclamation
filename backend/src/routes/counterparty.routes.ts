@@ -31,5 +31,4 @@ router.get('/:id', counterpartyController.getCounterpartyById);
 router.post('/', upload.single('contextFile'), counterpartyController.createCounterparty);
 router.patch('/:id', upload.single('contextFile'), counterpartyController.updateCounterparty);
 router.delete('/:id', counterpartyController.deleteCounterparty);
-router.post('/generate', counterpartyController.generateCounterparty);
 export default router; 

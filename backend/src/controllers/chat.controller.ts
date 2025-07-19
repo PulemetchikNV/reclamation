@@ -287,13 +287,7 @@ export const chatController = {
 
       // 3. Send initial prompt to RAG to get the first message
       const initialPrompt = INITIAL_DIALOG_PROMPT({
-        character: counterparty.character,
-        name: counterparty.name,
         scenario: `${scenario?.aiPrompt} ${JSON.stringify(scenario?.scenarioMeta) ?? ''}`,
-        goal: counterparty.goal,
-        apartmentSources: '', // Deprecated
-        apartmentDescription: apartment?.description || '',
-        userName: (fullUser?.firstName ? (fullUser.firstName + ' ' + fullUser.lastName) : '') || ''
       });
       
       const ragResponse = await aiService.communicateWithRag(ragSessionId, initialPrompt);

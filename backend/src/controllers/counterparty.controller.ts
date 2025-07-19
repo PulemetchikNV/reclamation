@@ -45,39 +45,6 @@ export const counterpartyController = {
     }
   },
 
-  async generateCounterparty(req: Request, res: Response) {
-    try {
-      const { type } = req.body || 'buyer';
-      const { name, lastName, gender, goal, age, role, characterShort } = getRandomCounterparty(type)
-      const counterpartyJSON = await aiService.communicateWithGemini([
-        { role: 'user', content: `
-          ${GEN_COUNTERPARTY_PROMPT({ name, type, gender, role, age, characterShort })}
-        `}
-      ]);
-      const photoResponse = await aiService.getGeminiPhoto(
-        GEN_COUNTERPARTY_PHOTO_PROMPT_BUYER(gender, counterpartyJSON.candidates[0].content.parts[0].text)
-      );
-
-      const rawJson = counterpartyJSON.candidates[0].content.parts[0].text
-      const parsedJson = removeJsonBraces(rawJson)
-
-      const counterpartyData = JSON.parse(parsedJson);
-      
-      // Используем URL изображения вместо base64
-      const photoUrl = photoResponse.imageUrl;
-      const counterparty = await counterpartyService.createCounterparty({
-        ...counterpartyData,
-        photos: [photoUrl],
-        name: `${name} ${lastName}`,
-        type,
-        goal,
-      });
-      res.status(201).json(counterparty);
-    } catch (error) {
-      console.error('Ошибка при генерации контрагента:', error);
-      res.status(500).json({ error: 'Не удалось сгенерировать контрагента' });
-    }
-  },
 
   // Получение контрагента по ID
   async getCounterpartyById(req: Request, res: Response) {

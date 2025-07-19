@@ -28,8 +28,3 @@ export interface CreateCounterpartyData {
   photos?: string[];
   difficulty?: Difficulty;
 }
-
-// Интерфейс для генерации контрагента
-export interface GenerateCounterpartyParams {
-  type?: CounterpartyType;
-} 
